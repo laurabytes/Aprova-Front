@@ -1,12 +1,12 @@
 import React, { createContext, useState } from 'react';
-import { subjects as initialSubjects } from '../data/mockData';
+// Não vamos mais importar os dados de mockData
 
-// Cria o contexto que vai guardar a lista de matérias
 export const SubjectsContext = createContext();
 
-// Cria o componente "Provedor" que vai disponibilizar a lista para as telas
 export const SubjectsProvider = ({ children }) => {
-  const [subjects, setSubjects] = useState(initialSubjects);
+  // A MUDANÇA ESTÁ AQUI:
+  // Em vez de carregar 'initialSubjects', começamos com uma lista vazia.
+  const [subjects, setSubjects] = useState([]); 
 
   return (
     <SubjectsContext.Provider value={{ subjects, setSubjects }}>

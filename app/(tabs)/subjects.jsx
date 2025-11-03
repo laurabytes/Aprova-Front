@@ -1,18 +1,33 @@
-import React, { useState, useRef, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatList, Alert, Modal, Pressable } from 'react-native';
-import { Pencil, Trash2, Check, X } from 'lucide-react-native';
+import { useRouter } from 'expo-router'; // Importante: ter o useRouter
+import { Check, Pencil, Trash2, X } from 'lucide-react-native';
+import React, { useContext, useRef, useState } from 'react';
+import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ColorPicker from 'react-native-wheel-color-picker';
-import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
+import { Header } from '../../components/Header';
+import { SubjectsContext } from '../../context/SubjectsContext';
 import { colors, fonts, spacing } from '../../theme/colors';
 import { commonStyles } from '../../theme/styles';
-import { SubjectsContext } from '../../context/SubjectsContext'; // Importa o contexto
+
+// ... (função getTextColorForBackground) ...
+function getTextColorForBackground(hexColor) {
+  try {
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+    return luminance > 140 ? colors.primaryText : colors.white;
+  } catch (e) {
+    return colors.primaryText; 
+  }
+}
 
 export default function SubjectsScreen() {
-  // Pega a lista de matérias e a função para atualizá-la do contexto central
   const { subjects, setSubjects } = useContext(SubjectsContext);
-
+  const router = useRouter(); // Importante: inicializar o router
   const [subjectName, setSubjectName] = useState('');
+  // ... (resto dos estados e funções) ...
   const [subjectColor, setSubjectColor] = useState('#FFD6E5');
   const [editingSubject, setEditingSubject] = useState(null);
   const [isColorPickerVisible, setColorPickerVisible] = useState(false);
@@ -20,7 +35,6 @@ export default function SubjectsScreen() {
   const [colorTarget, setColorTarget] = useState(null);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
   const touchableRefs = useRef({});
-  const addColorRef = React.createRef();
 
   const openColorPicker = (target, initialColor, ref) => {
     ref.current.measure((fx, fy, width, height, px, py) => {
@@ -31,18 +45,18 @@ export default function SubjectsScreen() {
     });
   };
 
-  const handleConfirmColor = () => {
+  const handleLiveColorChange = (color) => {
+    setCurrentColor(color);
     if (colorTarget === 'add') {
-      setSubjectColor(currentColor);
+      setSubjectColor(color);
     } else if (colorTarget === 'edit') {
-      setEditingSubject({ ...editingSubject, color: currentColor });
+      setEditingSubject({ ...editingSubject, color: color });
     }
-    setColorPickerVisible(false);
   };
 
   const handleEditPress = (subject) => setEditingSubject({ ...subject });
   const handleCancelEdit = () => setEditingSubject(null);
-  
+
   const handleUpdateSubject = () => {
     setSubjects(currentSubjects => 
       currentSubjects.map(s => (s.id === editingSubject.id ? editingSubject : s))
@@ -74,15 +88,24 @@ export default function SubjectsScreen() {
 
   const renderSubjectItem = ({ item }) => {
     const isEditing = editingSubject && editingSubject.id === item.id;
-    touchableRefs.current[item.id] = touchableRefs.current[item.id] || React.createRef();
+    const textColor = getTextColorForBackground(isEditing ? editingSubject.color : item.color);
 
     if (isEditing) {
+      // ... (código do modo de edição) ...
       return (
         <Card style={[styles.subjectCard, { backgroundColor: editingSubject.color }]}>
           <View style={styles.subjectInfo}>
-            <TextInput style={styles.editInput} value={editingSubject.name} onChangeText={(text) => setEditingSubject({ ...editingSubject, name: text })} autoFocus />
-            <TouchableOpacity ref={touchableRefs.current[item.id]} onPress={() => openColorPicker('edit', editingSubject.color, touchableRefs.current[item.id])}>
-              <Text style={styles.changeColorText}>Alterar cor</Text>
+            <TextInput 
+              style={[styles.editInput, { color: textColor, borderBottomColor: textColor }]}
+              value={editingSubject.name} 
+              onChangeText={(text) => setEditingSubject({ ...editingSubject, name: text })} 
+              autoFocus 
+            />
+            <TouchableOpacity 
+              ref={touchableRefs.current[item.id]} 
+              onPress={() => openColorPicker('edit', editingSubject.color, touchableRefs.current[item.id])}
+            >
+              <Text style={[styles.changeColorText, { color: textColor, textDecorationColor: textColor }]}>Alterar cor</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.subjectActions}>
@@ -95,24 +118,35 @@ export default function SubjectsScreen() {
 
     return (
       <Card style={[styles.subjectCard, { backgroundColor: item.color }]}>
-        <View style={styles.subjectInfo}>
-          <Text style={styles.subjectName}>{item.name}</Text>
-          <Text style={styles.subjectHours}>{item.hours}H estudadas</Text>
-        </View>
+        <TouchableOpacity 
+          style={styles.subjectInfo} 
+          onPress={() => router.push(`/subject/${item.id}`)} // O link está aqui
+        >
+          <Text style={[styles.subjectName, { color: textColor }]}>{item.name}</Text>
+          <Text style={[styles.subjectHours, { color: textColor }]}>{item.hours}H estudadas</Text>
+        </TouchableOpacity>
         <View style={styles.subjectActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleEditPress(item)}><Pencil size={20} color={colors.primaryText} /></TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleDeletePress(item.id)}><Trash2 size={20} color={colors.red} /></TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => handleEditPress(item)}>
+            <Pencil size={20} color={textColor} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => handleDeletePress(item.id)}>
+            <Trash2 size={20} color={colors.red} />
+          </TouchableOpacity>
         </View>
       </Card>
     );
   };
+  
+  const addColorRef = React.createRef();
 
   return (
     <View style={commonStyles.container}>
       <Header showBackButton showProgress currentStep={3} totalSteps={5} />
       <ScrollView style={commonStyles.screenPadding} showsVerticalScrollIndicator={false}>
+        {/* ... (o resto do JSX da tela) ... */}
         <Text style={styles.title}>Minhas Matérias</Text>
-        {/* ... O resto do seu JSX permanece igual ... */}
+        <Text style={styles.subtitle}>Gerencie suas disciplinas de estudo.</Text>
+
         <Card>
           <Text style={styles.cardTitle}>Adicionar Matéria</Text>
           <Text style={styles.label}>Nome</Text>
@@ -124,16 +158,25 @@ export default function SubjectsScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={styles.addButton} onPress={handleAddSubject}><Text style={styles.addButtonText}>Adicionar</Text></TouchableOpacity>
         </Card>
+
         <FlatList data={subjects} keyExtractor={(item) => item.id} scrollEnabled={false} renderItem={renderSubjectItem} />
         <View style={{ height: spacing.xl }} />
       </ScrollView>
+
       <Modal visible={isColorPickerVisible} transparent={true} animationType="fade" onRequestClose={() => setColorPickerVisible(false)}>
         <Pressable style={StyleSheet.absoluteFill} onPress={() => setColorPickerVisible(false)} />
         <View style={[styles.popoverContainer, popoverPosition]}>
           <View style={styles.colorPickerWrapper}>
-            <ColorPicker color={currentColor} onColorChange={setCurrentColor} thumbSize={25} sliderSize={25} noSnap={true} row={false} swatches={false} />
+            <ColorPicker
+              color={currentColor}
+              onColorChange={handleLiveColorChange}
+              thumbSize={25}
+              sliderSize={25}
+              noSnap={true}
+              row={false}
+              swatches={false}
+            />
           </View>
-          <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmColor}><Text style={styles.confirmButtonText}>Confirmar</Text></TouchableOpacity>
         </View>
       </Modal>
     </View>
@@ -150,17 +193,24 @@ const styles = StyleSheet.create({
     addButtonText: { color: colors.white, fontWeight: '600', fontSize: fonts.subtitleSize, },
     subjectCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', },
     subjectInfo: { flex: 1, },
-    subjectName: { fontSize: fonts.subtitleSize, fontWeight: '600', color: colors.primaryText, marginBottom: spacing.xs, },
-    subjectHours: { fontSize: fonts.bodySize, color: colors.secondaryText, },
+    subjectName: { fontSize: fonts.subtitleSize, fontWeight: '600', marginBottom: spacing.xs, }, 
+    subjectHours: { fontSize: fonts.bodySize, }, 
     subjectActions: { flexDirection: 'row', gap: spacing.sm, },
     actionButton: { padding: spacing.xs, },
-    editInput: { backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 6, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, fontSize: fonts.subtitleSize, fontWeight: '600', marginBottom: spacing.sm, },
-    changeColorText: { color: colors.primaryText, fontWeight: '500', textDecorationLine: 'underline', },
+    editInput: { 
+      fontSize: fonts.subtitleSize, fontWeight: '600', 
+      marginBottom: spacing.sm, 
+      paddingVertical: spacing.xs,
+      borderBottomWidth: 1,
+      backgroundColor: 'transparent',
+    },
+    changeColorText: { 
+      fontWeight: '500', 
+      textDecorationLine: 'underline',
+    },
     colorPreviewTouchable: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderWidth: 1, borderColor: colors.gray, borderRadius: 8, padding: spacing.xs, marginTop: spacing.xs, },
     colorPreview: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: colors.gray, },
     colorValueText: { fontSize: fonts.bodySize, color: colors.secondaryText, },
     popoverContainer: { position: 'absolute', backgroundColor: 'white', borderRadius: 12, padding: spacing.md, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5, gap: spacing.sm, },
     colorPickerWrapper: { height: 250, width: 250, },
-    confirmButton: { backgroundColor: colors.accent, paddingVertical: spacing.xs, borderRadius: 8, alignItems: 'center', },
-    confirmButtonText: { color: colors.white, fontWeight: 'bold', },
 });

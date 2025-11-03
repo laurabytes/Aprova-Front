@@ -1,11 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import PropTypes from 'prop-types';
-import { Bell, ArrowLeft } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { colors, fonts, spacing } from '../theme/colors';
+import { ArrowLeft, Bell } from 'lucide-react-native';
+import PropTypes from 'prop-types';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useUser } from '../hooks/useUser';
+import { colors, fonts, spacing } from '../theme/colors';
 
 export function Header({ title, showBackButton, showNotification, showProgress, currentStep, totalSteps, onBackPress, }) {
   const user = useUser();

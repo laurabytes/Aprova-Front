@@ -1,6 +1,6 @@
+import PropTypes from 'prop-types';
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import PropTypes from 'prop-types'; 
+import { StyleSheet, View } from 'react-native';
 import { commonStyles } from '../theme/styles';
 
 export function Card({ children, style }) {

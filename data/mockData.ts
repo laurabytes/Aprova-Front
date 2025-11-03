@@ -1,8 +1,11 @@
 import { colors } from "@/theme/colors";
 
+// Função helper para criar datas de exemplo
+const getFutureDate = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
 export const performanceData = [
   {
-    name: 'História do Brasil',
+    name: 'História do Brasa',
     hours: 8,
     color: colors.yellow,
     legendFontColor: colors.primaryText,
@@ -16,14 +19,14 @@ export const performanceData = [
     legendFontSize: 12,
   },
   {
-    name: 'Geometria',
+    name: 'Geometria (o terror)',
     hours: 5,
     color: colors.lightGreen,
     legendFontColor: colors.primaryText,
     legendFontSize: 12,
   },
   {
-    name: 'Álgebra Linear',
+    name: 'Álgebra',
     hours: 4,
     color: colors.lightPink,
     legendFontColor: colors.primaryText,
@@ -43,29 +46,29 @@ export const weeklyStudyData = {
 export const goals = [
   {
     id: '1',
-    title: 'Ler livro Físico',
-    subtitle: 'Meta Semanal de Estudos',
+    title: 'Ler o livro de Física (finalmente)',
+    description: 'Capítulos 3 e 4 sobre Termodinâmica. Fazer pelo menos 20 exercícios.',
     progress: 0.75,
     status: 'Alta',
-    deadline: 'Domingo',
+    deadline: getFutureDate(5), // Prazo de 5 dias a partir de hoje
     statusColor: colors.red,
   },
   {
     id: '2',
-    title: 'Revisar Matemática',
-    subtitle: 'Meta Semanal de Estudos',
+    title: 'Revisar Mat. pra prova',
+    description: 'Refazer a lista de Funções Quadráticas e Logaritmos.',
     progress: 0.5,
     status: 'Média',
-    deadline: 'Sexta',
+    deadline: getFutureDate(3), // Prazo de 3 dias
     statusColor: colors.orange,
   },
   {
     id: '3',
-    title: 'Exercícios de Química',
-    subtitle: 'Meta Diária',
+    title: 'Fazer os exercícios de Química',
+    description: 'Lista sobre Estequiometria, página 52.',
     progress: 0.3,
     status: 'Baixa',
-    deadline: 'Hoje',
+    deadline: getFutureDate(1), // Prazo de 1 dia
     statusColor: colors.accent,
   },
 ];
@@ -97,14 +100,14 @@ export const subjects = [
 export const scheduledSessions = [
   {
     id: '1',
-    subject: 'Álgebra Linear',
-    topic: 'Matrizes',
+    subject: 'Álgebra',
+    topic: 'Matrizes (socorro)',
     time: 'Hoje - 14:00',
   },
   {
     id: '2',
     subject: 'Português',
-    topic: 'Literatura',
+    topic: 'Resumo de Literatura',
     time: 'Hoje - 14:00',
   },
 ];
