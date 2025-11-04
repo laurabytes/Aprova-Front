@@ -1,5 +1,4 @@
 // app/(tabs)/dashboard.jsx
-import { Link } from 'expo-router';
 import { BookOpen, Target, Timer, TrendingUp } from 'lucide-react-native';
 import React from 'react';
 import {
@@ -10,13 +9,11 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import { Botao } from '../../componentes/Botao';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from '../../componentes/Card';
 import { useAuth } from '../../contexto/AuthContexto';
 import { cores } from '../../tema/cores';
@@ -29,7 +26,9 @@ function StatCard({ title, value, description, icon: Icon }) {
     <Card style={styles.statCard}>
       <CardHeader>
         <View style={styles.statHeader}>
-          <CardTitle style={{ color: theme.foreground }}>{title}</CardTitle>
+          <CardTitle style={{ color: theme.foreground, fontSize: 16 }}> 
+            {title}
+          </CardTitle>
           <Icon color={theme.mutedForeground} size={16} />
         </View>
       </CardHeader>
@@ -43,30 +42,21 @@ function StatCard({ title, value, description, icon: Icon }) {
   );
 }
 
-// Componente de Card de Navegação (Dashboard)
-function NavCard({ title, description, href, icon: Icon }) {
-  return (
-    <Card style={styles.navCard}>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Link href={href} asChild>
-          <Botao>
-            <Icon size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
-            Gerenciar
-          </Botao>
-        </Link>
-      </CardContent>
-    </Card>
-  );
-}
+// O componente NavCard e seu uso foram removidos.
+// function NavCard(...) { ... }
 
 export default function TelaDashboard() {
   const { user } = useAuth();
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? cores.dark : cores.light;
+
+  // Simulação de contagem (substitua pela sua lógica de API/estado)
+  const stats = {
+    materias: 0,
+    flashcards: 0,
+    objetivos: 0,
+    pomodoro: 0,
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -80,55 +70,37 @@ export default function TelaDashboard() {
           </Text>
         </View>
 
-        {/* Grid de Estatísticas */}
+        {/* Grid de Estatísticas (MANTIDO) */}
         <View style={styles.grid}>
           <StatCard
             title="Matérias"
-            value="0"
+            value={stats.materias}
             description="matérias cadastradas"
             icon={BookOpen}
           />
           <StatCard
             title="Flashcards"
-            value="0"
+            value={stats.flashcards}
             description="flashcards criados"
             icon={TrendingUp}
           />
           <StatCard
             title="Objetivos"
-            value="0"
+            value={stats.objetivos}
             description="objetivos ativos"
             icon={Target}
           />
           <StatCard
             title="Pomodoro"
-            value="0"
+            value={stats.pomodoro}
             description="sessões completadas"
             icon={Timer}
           />
         </View>
 
-        {/* Grid de Navegação */}
-        <View style={styles.navGrid}>
-          <NavCard
-            title="Matérias"
-            description="Organize suas matérias e flashcards"
-            href="/(tabs)/materias"
-            icon={BookOpen}
-          />
-          <NavCard
-            title="Objetivos"
-            description="Defina e acompanhe seus objetivos"
-            href="/(tabs)/objetivos"
-            icon={Target}
-          />
-          <NavCard
-            title="Pomodoro"
-            description="Use a técnica Pomodoro para estudar"
-            href="/(tabs)/pomodoro"
-            icon={Timer}
-          />
-        </View>
+        {/* O Grid de Navegação (Gerenciar Matérias/Objetivos/Pomodoro)
+          foi removido para evitar redundância com as abas inferiores. 
+        */}
       </ScrollView>
     </SafeAreaView>
   );
@@ -150,15 +122,15 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
   },
+  // Configuração da grade 2x2 para os StatCards
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    margin: -8, // Contrabalança o padding dos cards
+    justifyContent: 'space-between',
   },
   statCard: {
-    flexGrow: 1,
-    flexBasis: '40%', // Para caber 2 por linha com gap
-    margin: 8,
+    width: '48.5%', 
+    marginBottom: 12,
   },
   statHeader: {
     flexDirection: 'row',
@@ -172,10 +144,5 @@ const styles = StyleSheet.create({
   statDescription: {
     fontSize: 12,
   },
-  navGrid: {
-    gap: 16,
-  },
-  navCard: {
-    width: '100%',
-  },
+  // navGrid e navCard não são mais usados
 });

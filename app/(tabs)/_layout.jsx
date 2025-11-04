@@ -1,59 +1,74 @@
-import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
-import { cores } from '../../tema/cores'; // Importa nossas cores
+// app/_layout.jsx
+// (SUBSTITUA TODO O CONTEÚDO)
 
-// Importa os ícones que vamos usar
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Redirect, Slot, useRouter, useSegments } from 'expo-router';
+import { useEffect } from 'react';
+import { ActivityIndicator, SafeAreaView, StyleSheet, useColorScheme, View } from 'react-native';
 
-// Componente helper para o ícone (só para organizar)
-function TabBarIcon(props) {
-  return <FontAwesome size={24} style={{ marginBottom: -3 }} {...props} />;
-}
+// --- ATENÇÃO: Caminhos de importação corrigidos para sair de app/ e acessar as pastas irmãs ---
+import { AuthProvider, useAuth } from '../contexto/AuthContexto';
+import { cores } from '../tema/cores';
+// ---------------------------------------------------------------------------------------------
 
-export default function TabLayout() {
+function LayoutInicial() {
+  const { user, isLoading } = useAuth();
+  
+  const segments = useSegments(); 
+  const router = useRouter();
   const scheme = useColorScheme();
-  const theme = scheme === 'dark' ? cores.dark : cores.light;
+  const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
+  useEffect(() => {
+    // ESSENCIAL: Espera o AuthProvider terminar de checar o token
+    if (isLoading) {
+      return; 
+    }
+
+    const estaNoGrupoAuth = segments[0] === '(auth)';
+
+    if (user && estaNoGrupoAuth) {
+      // Se logado e em uma tela de autenticação, redireciona para o dashboard.
+      router.replace('/(tabs)/dashboard');
+    } else if (!user && !estaNoGrupoAuth) {
+      // Se deslogado e em uma tela de aplicativo (tabs), redireciona para o login.
+      router.replace('/(auth)/login');
+    }
+  }, [user, isLoading, segments]); 
+
+  // Se está carregando (estado inicial), mostra o spinner.
+  if (isLoading) {
+      return (
+          <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+              <ActivityIndicator size="large" color={theme.primary} />
+          </View>
+      );
+  }
+
+  // CORREÇÃO FINAL para o "THIS SCREEN DOESN'T EXIST": 
+  // Se não estamos logados E a rota é a raiz ('/'), forçamos para o login.
+  if (!user && segments.length === 1 && segments[0] === '') {
+      return <Redirect href="/(auth)/login" />;
+  }
+
+  // O <Slot> renderiza a tela correta (login ou dashboard)
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: theme.primary, // Cor do ícone ativo (azul)
-        tabBarInactiveTintColor: theme.mutedForeground, // Cor do ícone inativo (cinza)
-        tabBarStyle: {
-          backgroundColor: theme.card, // Fundo da barra de abas (branco)
-          borderTopColor: theme.border, // Linha de cima
-        },
-        headerShown: false, // Esconde o "Dashboard" escrito no topo da tela
-      }}
-    >
-      <Tabs.Screen
-        name="dashboard" // Nome do arquivo: dashboard.jsx
-        options={{
-          title: 'Dashboard',
-          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="materias" // Nome do arquivo: materias.jsx
-        options={{
-          title: 'Matérias',
-          tabBarIcon: ({ color }) => <TabBarIcon name="book" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="objetivos" // Nome do arquivo: objetivos.jsx
-        options={{
-          title: 'Objetivos',
-          tabBarIcon: ({ color }) => <TabBarIcon name="bullseye" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="pomodoro" // Nome do arquivo: pomodoro.jsx
-        options={{
-          title: 'Pomodoro',
-          tabBarIcon: ({ color }) => <TabBarIcon name="clock-o" color={color} />,
-        }}
-      />
-    </Tabs>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <Slot />
+    </SafeAreaView>
   );
 }
+
+// Este é o componente principal
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <LayoutInicial />
+    </AuthProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
