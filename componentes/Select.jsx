@@ -1,9 +1,10 @@
 // laurabytes/teste/teste-2245de4fd0484947e9d28a093b91aba0b792499b/componentes/Select.jsx
 import { Picker } from '@react-native-picker/picker';
-import { StyleSheet, useColorScheme, View } from 'react-native';
+import { Platform, StyleSheet, useColorScheme, View } from 'react-native'; // 1. Importar Platform
 import { cores } from '../tema/cores'; // Caminho para a pasta 'tema'
 
-export function Select({ children, onValueChange, value, enabled = true }) {
+// 2. Adicionar 'prompt' nas props
+export function Select({ children, onValueChange, value, enabled = true, prompt }) {
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? cores.dark : cores.light; //
 
@@ -17,14 +18,23 @@ export function Select({ children, onValueChange, value, enabled = true }) {
       justifyContent: 'center',
       // Definimos o background para o valor do Card, para ficar consistente
       backgroundColor: theme.card, //
+      overflow: 'hidden', // Adicionado para conter o Picker
     },
     picker: {
       color: theme.foreground, //
-      // Adicionamos estilos de texto para torná-lo mais customizado
-      fontSize: 16, 
-      fontWeight: '500',
+      backgroundColor: theme.card, // Adicionado para forçar o fundo no Picker
       // Ajuste para Android: padding negativo para centralizar
-      paddingLeft: -12, 
+      ...Platform.select({
+        android: {
+          paddingLeft: -12,
+        },
+      }),
+    },
+    // Estilo dos itens para o iOS
+    pickerItem: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: theme.foreground,
     },
   });
 
@@ -34,9 +44,15 @@ export function Select({ children, onValueChange, value, enabled = true }) {
         selectedValue={value}
         onValueChange={onValueChange}
         style={styles.picker}
-        // Tentamos aplicar um estilo mais genérico de fonte para iOS/Web
-        itemStyle={{ fontSize: 16, fontWeight: '500' }} 
+        // itemStyle SÓ funciona no iOS
+        itemStyle={styles.pickerItem}
         enabled={enabled}
+        // Adiciona cor ao ícone de "seta para baixo"
+        dropdownIconColor={theme.mutedForeground}
+        
+        // 3. ADICIONAR ESTAS PROPS
+        mode="dialog"
+        prompt={prompt || 'Selecione uma opção'}
       >
         {children}
       </Picker>

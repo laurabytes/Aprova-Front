@@ -1,27 +1,26 @@
-// app/(tabs)/objetivos.jsx
+
 import { CheckCircle2, Circle, Edit, Plus, Target, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View
 } from 'react-native';
-// import api from '../../lib/api'; // API REMOVIDA
 import { Badge } from '../../componentes/Badge';
 import { Botao } from '../../componentes/Botao';
 import { CampoDeTexto } from '../../componentes/CampoDeTexto';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '../../componentes/Card';
 import { Dialog } from '../../componentes/Dialog';
 import { Progress } from '../../componentes/Progress';
@@ -42,7 +41,7 @@ export default function TelaObjetivos() {
   const theme = scheme === 'dark' ? cores.dark : cores.light;
 
   const [goals, setGoals] = useState(MOCK_GOALS);
-  const [isLoading, setIsLoading] = useState(false); // Loading do form
+  const [isLoading, setIsLoading] = useState(false); 
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
@@ -55,7 +54,7 @@ export default function TelaObjetivos() {
   });
 
   useEffect(() => {
-    // Simula o carregamento dos dados
+  
     setIsPageLoading(true);
     setTimeout(() => {
       setGoals(MOCK_GOALS.filter(g => g.usuarioId === user?.id));
@@ -65,7 +64,7 @@ export default function TelaObjetivos() {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    await new Promise(res => setTimeout(res, 300)); // Simula rede
+    await new Promise(res => setTimeout(res, 300)); 
     try {
       if (editingGoal) {
         setGoals(prev =>
@@ -215,6 +214,7 @@ export default function TelaObjetivos() {
               <Select
                 value={formData.status}
                 onValueChange={(status) => setFormData({ ...formData, status })}
+                prompt="Selecione o status" 
               >
                 <SelectItem label="Em Andamento" value="EM_ANDAMENTO" />
                 <SelectItem label="Concluído" value="CONCLUIDO" />

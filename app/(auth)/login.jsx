@@ -1,4 +1,4 @@
-// app/(auth)/login.jsx
+
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -31,7 +31,7 @@ export default function Login() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Loading do formulário
+  const [isLoading, setIsLoading] = useState(false); 
 
   const handleLogin = async () => {
     if (email === '' || senha === '') {
@@ -41,9 +41,7 @@ export default function Login() {
     
     setIsLoading(true);
     try {
-      // Chama a função de login (simulada) do contexto
       await login(email, senha);
-      // Se o login funcionar, o _layout.jsx vai nos redirecionar
     } catch (error) {
       Alert.alert('Erro no Login', error.message);
     } finally {

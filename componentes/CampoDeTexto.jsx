@@ -1,3 +1,4 @@
+// componentes/CampoDeTexto.jsx
 import { StyleSheet, TextInput, useColorScheme } from 'react-native';
 import { cores } from '../tema/cores';
 
@@ -12,6 +13,7 @@ export function CampoDeTexto({ style, placeholder, value, onChangeText, secureTe
         {
           borderColor: theme.border,
           color: theme.foreground,
+          backgroundColor: theme.card, // <-- 1. ADICIONADO AQUI
         },
         style,
       ]}
@@ -32,6 +34,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     fontSize: 14,
-    backgroundColor: '#FFFFFF',
+    // backgroundColor: '#FFFFFF', // <-- 2. REMOVIDO DAQUI
   },
 });

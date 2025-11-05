@@ -1,13 +1,10 @@
 // app/_layout.jsx
-// (SUBSTITUA TODO O CONTEÚDO)
-
 import { Redirect, Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, SafeAreaView, StyleSheet, useColorScheme, View } from 'react-native';
-import { AuthProvider, useAuth } from '../contexto/AuthContexto'; // <-- CORREÇÃO: Caminho de 1 nível acima
-import { cores } from '../tema/cores'; // <-- CORREÇÃO: Caminho de 1 nível acima
+import { AuthProvider, useAuth } from '../contexto/AuthContexto'; 
+import { cores } from '../tema/cores'; 
 
-// Este componente decide para onde o usuário vai
 function LayoutInicial() {
   const { user, isLoading } = useAuth();
   
@@ -17,37 +14,33 @@ function LayoutInicial() {
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
   useEffect(() => {
-    if (isLoading) {
-      return; 
-    }
+    // 1. Mesmo que esteja carregando (isLoading), a lógica continua
+    // if (isLoading) {
+    //   return; 
+    // }
 
     const estaNoGrupoAuth = segments[0] === '(auth)';
 
     if (user && estaNoGrupoAuth) {
-      // Se logado e na tela de login, vá para dashboard.
       router.replace('/(tabs)/dashboard');
     } else if (!user && !estaNoGrupoAuth) {
-      // Se deslogado e não na tela de login, vá para login.
       router.replace('/(auth)/login');
     }
   }, [user, isLoading, segments]); 
 
-  // Se está carregando, mostramos um ActivityIndicator
-  if (isLoading) {
-      return (
-          <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
-              <ActivityIndicator size="large" color={theme.primary} />
-          </View>
-      );
-  }
+  // 2. REMOVEMOS O BLOCO "if (isLoading)" DAQUI
+  // if (isLoading) {
+  //     return (
+  //         <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+  //             <ActivityIndicator size="large" color={theme.primary} />
+  //         </View>
+  //     );
+  // }
 
-  // CORREÇÃO FINAL para o "Page Not Found": 
-  // Se não estamos logados E a rota é a raiz (que não existe), forçamos para o login.
   if (!user && segments.length === 1 && segments[0] === '') {
       return <Redirect href="/(auth)/login" />;
   }
 
-  // O <Slot> renderiza a tela correta
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <Slot />
@@ -55,10 +48,8 @@ function LayoutInicial() {
   );
 }
 
-// Este é o componente principal
 export default function RootLayout() {
   return (
-    // O AuthProvider "abraça" o app inteiro
     <AuthProvider>
       <LayoutInicial />
     </AuthProvider>

@@ -1,8 +1,7 @@
-// laurabytes/teste/teste-2245de4fd0484947e9d28a093b91aba0b792499b/app/(tabs)/_layout.jsx
+
 import { Tabs } from 'expo-router';
 import { useColorScheme } from 'react-native';
-// Importamos Timer para ser o novo ícone do Pomodoro
-import { BookOpen, Home, Target, Timer } from 'lucide-react-native';
+import { BookOpen, Home, Target, Timer, UserCircle } from 'lucide-react-native';
 import { cores } from '../../tema/cores';
 
 export default function TabsLayout() {
@@ -13,8 +12,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: theme.primary,
-        // 1. REMOVE OS NOMES:
-        tabBarShowLabel: false, 
+        tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: theme.card,
           borderTopColor: theme.border,
@@ -32,15 +30,14 @@ export default function TabsLayout() {
         options={{
           title: 'Início',
           tabBarIcon: ({ color }) => <Home size={24} color={color} />,
-          headerShown: false, 
+          headerShown: false,
         }}
       />
       <Tabs.Screen
         name="pomodoro"
         options={{
           title: 'Pomodoro',
-          // 2. MUDA O ÍCONE: Agora usa Timer em vez de Coffee
-          tabBarIcon: ({ color }) => <Timer size={24} color={color} />, 
+          tabBarIcon: ({ color }) => <Timer size={24} color={color} />,
           headerShown: false,
         }}
       />
@@ -48,26 +45,35 @@ export default function TabsLayout() {
         name="objetivos"
         options={{
           title: 'Objetivos',
-          tabBarIcon: ({ color }) => <Target size={24} color={color} />, 
+          tabBarIcon: ({ color }) => <Target size={24} color={color} />,
           headerShown: false,
         }}
       />
       <Tabs.Screen
-        // Corresponde ao arquivo materias/index.jsx
-        name="materias/index" 
+        name="materias/index"
         options={{
           title: 'Matérias',
-          tabBarIcon: ({ color }) => <BookOpen size={24} color={color} />, 
+          tabBarIcon: ({ color }) => <BookOpen size={24} color={color} />,
           headerShown: false,
         }}
       />
-      {/* Rota para o detalhe de Flashcards, escondida da TabBar */}
-      <Tabs.Screen 
+      <Tabs.Screen
         name="materias/[id]"
         options={{
-          href: null, 
-          headerShown: false, 
+          href: null,
+          headerShown: false,
           title: 'Flashcards',
+        }}
+      />
+
+      {}
+      <Tabs.Screen
+        name="perfil" 
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color }) => <UserCircle size={24} color={color} />,
+          headerShown: false,
+          href: null, 
         }}
       />
     </Tabs>

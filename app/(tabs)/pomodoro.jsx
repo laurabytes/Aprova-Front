@@ -2,13 +2,13 @@
 import { Coffee, Pause, Play, RotateCcw, Timer } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    useColorScheme,
-    View
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View
 } from 'react-native';
 // import api from '../../lib/api'; // API REMOVIDA
 import { Botao } from '../../componentes/Botao';
@@ -199,7 +199,9 @@ export default function TelaPomodoro() {
                 </View>
               )}
 
-              <View style={styles.buttonRow}>
+              {/* AQUI ESTÁ A MUDANÇA NO paddingHorizontal DO buttonRow
+                */}
+              <View style={[styles.buttonRow, { paddingHorizontal: 16 }]}>
                 {!isRunning ? (
                   <Botao onPress={handleStart} style={{ flex: 1 }}>
                     <Play color={theme.primaryForeground} size={18} style={{ marginRight: 8 }} />
@@ -211,7 +213,7 @@ export default function TelaPomodoro() {
                     Pausar
                   </Botao>
                 )}
-                <Botao variant="outline" onPress={handleReset}>
+                <Botao variant="outline" onPress={handleReset} style={{ flex: 1 }}>
                   <RotateCcw color={theme.foreground} size={18} />
                 </Botao>
               </View>
@@ -267,7 +269,7 @@ const styles = StyleSheet.create({
   timerText: { fontSize: 60, fontWeight: '700', letterSpacing: 1.5 },
   pickerContainer: { width: '100%', gap: 8 },
   label: { fontSize: 14, fontWeight: '500', color: '#262626' },
-  buttonRow: { flexDirection: 'row', gap: 16 },
+  buttonRow: { flexDirection: 'row', gap: 16 }, // Este estilo base já está no lugar
   statsContainer: { gap: 16 },
   statText: { fontSize: 28, fontWeight: '700' },
   statSubText: { fontSize: 12, marginTop: 2 },

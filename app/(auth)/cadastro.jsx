@@ -1,4 +1,4 @@
-// app/(auth)/cadastro.jsx
+
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -53,7 +53,6 @@ export default function Cadastro() {
     setIsLoading(true);
     try {
       await register(nome, email, senha);
-      // O redirecionamento será feito pelo app/_layout.jsx
     } catch (err) {
       Alert.alert('Erro', err.message || 'Erro ao criar conta. Tente novamente.');
     } finally {
