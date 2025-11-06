@@ -1,9 +1,12 @@
+// app/(tabs)/objetivos.jsx
 
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { CheckCircle2, Circle, Edit, Plus, Target, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -29,22 +32,20 @@ import { Textarea } from '../../componentes/Textarea';
 import { useAuth } from '../../contexto/AuthContexto';
 import { cores } from '../../tema/cores';
 
-// Mock de dados
-const MOCK_GOALS = [
-    { id: 1, titulo: 'Concluir curso de RN', descricao: 'Terminar todos os módulos', dataInicio: '2025-11-01', dataFim: '2025-11-30', status: 'EM_ANDAMENTO', usuarioId: 1 },
-    { id: 2, titulo: 'Revisar JS', descricao: 'Revisar closures e promises', dataInicio: '2025-10-15', dataFim: '2025-11-01', status: 'CONCLUIDO', usuarioId: 1 },
-];
-
-export default function TelaObjetivos() {
+export default function TelaMetas() {
   const { user } = useAuth();
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? cores.dark : cores.light;
 
-  const [goals, setGoals] = useState(MOCK_GOALS);
-  const [isLoading, setIsLoading] = useState(false); 
+  const [goals, setGoals] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
+
+  const [showDatePickerFor, setShowDatePickerFor] = useState(null); 
+  const [tempDate, setTempDate] = useState(new Date()); 
+
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
@@ -54,13 +55,49 @@ export default function TelaObjetivos() {
   });
 
   useEffect(() => {
-  
     setIsPageLoading(true);
-    setTimeout(() => {
-      setGoals(MOCK_GOALS.filter(g => g.usuarioId === user?.id));
-      setIsPageLoading(false);
-    }, 500);
+    setGoals([]);
+    setIsPageLoading(false);
   }, [user]);
+  
+  // --- LÓGICA DO CALENDÁRIO (sem alteração) ---
+  const getDateValue = (dateString) => {
+    if (dateString) {
+      const date = new Date(dateString + 'T00:00:00'); 
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    return new Date();
+  };
+
+  const openDatePicker = (field) => {
+    setShowDatePickerFor(field);
+    setTempDate(getDateValue(formData[field]));
+  };
+
+  const onDateChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') {
+      setShowDatePickerFor(null); 
+      if (event.type === 'set' && selectedDate) {
+        const formattedDate = selectedDate.toISOString().split('T')[0];
+        setFormData({ ...formData, [showDatePickerFor]: formattedDate });
+      }
+    } else {
+      setTempDate(selectedDate || tempDate);
+    }
+  };
+
+  const confirmDate = () => {
+    const formattedDate = tempDate.toISOString().split('T')[0];
+    setFormData({ ...formData, [showDatePickerFor]: formattedDate });
+    setShowDatePickerFor(null); 
+  };
+
+  const cancelDate = () => {
+    setShowDatePickerFor(null);
+  };
+  // --- FIM DA LÓGICA DO CALENDÁRIO ---
 
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -85,14 +122,14 @@ export default function TelaObjetivos() {
       setIsDialogOpen(false);
       setEditingGoal(null);
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível salvar o objetivo.');
+      Alert.alert('Erro', 'Não foi possível salvar a meta.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    Alert.alert('Excluir Objetivo', 'Tem certeza que deseja excluir?', [
+    Alert.alert('Excluir Meta', 'Tem certeza que deseja excluir?', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Excluir',
@@ -167,86 +204,139 @@ export default function TelaObjetivos() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerRow}>
           <View>
-            <Text style={[styles.title, { color: theme.foreground }]}>Objetivos</Text>
+            <Text style={[styles.title, { color: theme.foreground }]}>Metas</Text>
             <Text style={[styles.subtitle, { color: theme.mutedForeground }]}>
-              Defina e acompanhe seus objetivos
+              Defina e acompanhe suas metas
             </Text>
           </View>
-           <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: theme.primary }]}
-            onPress={openCreateDialog}
-          >
-            <Plus color={theme.primaryForeground} size={20} />
-          </TouchableOpacity>
+           
         </View>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <View>
-            <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
-              {editingGoal ? 'Editar Objetivo' : 'Novo Objetivo'}
-            </Text>
-            <View style={styles.form}>
-              <Text style={[styles.label, { color: theme.foreground }]}>Título</Text>
-              <CampoDeTexto
-                value={formData.titulo}
-                onChangeText={(t) => setFormData({ ...formData, titulo: t })}
-                placeholder="Ex: Concluir curso de Matemática"
-              />
-              <Text style={[styles.label, { color: theme.foreground }]}>Descrição</Text>
-              <Textarea
-                value={formData.descricao}
-                onChangeText={(t) => setFormData({ ...formData, descricao: t })}
-                placeholder="Descreva seu objetivo"
-              />
-              <Text style={[styles.label, { color: theme.foreground }]}>Data Início</Text>
-              <CampoDeTexto
-                value={formData.dataInicio}
-                onChangeText={(t) => setFormData({ ...formData, dataInicio: t })}
-                placeholder="AAAA-MM-DD"
-              />
-              <Text style={[styles.label, { color: theme.foreground }]}>Data Fim</Text>
-              <CampoDeTexto
-                value={formData.dataFim}
-                onChangeText={(t) => setFormData({ ...formData, dataFim: t })}
-                placeholder="AAAA-MM-DD"
-              />
-              <Text style={[styles.label, { color: theme.foreground }]}>Status</Text>
-              <Select
-                value={formData.status}
-                onValueChange={(status) => setFormData({ ...formData, status })}
-                prompt="Selecione o status" 
-              >
-                <SelectItem label="Em Andamento" value="EM_ANDAMENTO" />
-                <SelectItem label="Concluído" value="CONCLUIDO" />
-                <SelectItem label="Cancelado" value="CANCELADO" />
-              </Select>
-              <View style={styles.dialogActions}>
-                <Botao variant="destructive" onPress={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Botao>
-                <Botao onPress={handleSubmit} disabled={isLoading}>
-                   {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingGoal ? 'Salvar' : 'Criar')}
-                </Botao>
+            {showDatePickerFor ? (
+              // --- VISTA DO CALENDÁRIO ---
+              <View>
+                <Text style={[styles.dialogTitle, { color: theme.foreground, marginBottom: 16 }]}>
+                  {showDatePickerFor === 'dataInicio' ? 'Selecione a Data de Início' : 'Selecione a Data de Fim'}
+                </Text>
+                
+                <DateTimePicker
+                  value={tempDate}
+                  mode="date"
+                  display={Platform.OS === 'android' ? 'default' : 'inline'}
+                  onChange={onDateChange}
+                  style={{ marginBottom: 16 }}
+                />
+
+                {Platform.OS !== 'android' && (
+                  <View style={styles.dialogActions}>
+                    <Botao variant="outline" onPress={cancelDate} style={{ flex: 1 }}>
+                      Cancelar
+                    </Botao>
+                    <Botao onPress={confirmDate} style={{ flex: 1 }}>
+                      Confirmar
+                    </Botao>
+                  </View>
+                )}
               </View>
-            </View>
+
+            ) : (
+              // --- VISTA DO FORMULÁRIO ---
+              <View>
+                <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
+                  {editingGoal ? 'Editar Meta' : 'Nova Meta'}
+                </Text>
+                <View style={styles.form}>
+                  <Text style={[styles.label, { color: theme.foreground }]}>Título</Text>
+                  <CampoDeTexto
+                    value={formData.titulo}
+                    onChangeText={(t) => setFormData({ ...formData, titulo: t })}
+                    placeholder="Ex: Concluir curso de Matemática"
+                  />
+                  <Text style={[styles.label, { color: theme.foreground }]}>Descrição</Text>
+                  <Textarea
+                    value={formData.descricao}
+                    onChangeText={(t) => setFormData({ ...formData, descricao: t })}
+                    placeholder="Descreva sua meta"
+                  />
+                  
+                  <Text style={[styles.label, { color: theme.foreground }]}>Data Início</Text>
+                  <TouchableOpacity 
+                    style={[styles.fakeInput, { borderColor: theme.border, backgroundColor: theme.card }]}
+                    onPress={() => openDatePicker('dataInicio')}
+                  >
+                    <Text style={[{ fontSize: 14, color: formData.dataInicio ? theme.foreground : theme.mutedForeground }]}>
+                      {formData.dataInicio || 'AAAA-MM-DD'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <Text style={[styles.label, { color: theme.foreground }]}>Data Fim</Text>
+                  <TouchableOpacity 
+                    style={[styles.fakeInput, { borderColor: theme.border, backgroundColor: theme.card }]}
+                    onPress={() => openDatePicker('dataFim')}
+                  >
+                    <Text style={[{ fontSize: 14, color: formData.dataFim ? theme.foreground : theme.mutedForeground }]}>
+                      {formData.dataFim || 'AAAA-MM-DD'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <Text style={[styles.label, { color: theme.foreground }]}>Status</Text>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(status) => setFormData({ ...formData, status })}
+                    prompt="Selecione o status" 
+                  >
+                    <SelectItem label="Em Andamento" value="EM_ANDAMENTO" />
+                    <SelectItem label="Concluído" value="CONCLUIDO" />
+                    <SelectItem label="Cancelado" value="CANCELADO" />
+                  </Select>
+                  <View style={styles.dialogActions}>
+                    <Botao variant="destructive" onPress={() => setIsDialogOpen(false)}>
+                      Cancelar
+                    </Botao>
+                    <Botao onPress={handleSubmit} disabled={isLoading}>
+                      {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingGoal ? 'Salvar' : 'Criar')}
+                    </Botao>
+                  </View>
+                </View>
+              </View>
+            )}
           </View>
         </Dialog>
+        
+        {showDatePickerFor && Platform.OS === 'android' && (
+          <DateTimePicker
+            value={getDateValue(formData[showDatePickerFor])}
+            mode="date"
+            display="default"
+            onChange={onDateChange}
+          />
+        )}
+
 
         {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
 
         {!isPageLoading && goals.length === 0 ? (
+          // --- INÍCIO DA ALTERAÇÃO DO ESTADO VAZIO ---
           <Card>
             <CardContent style={styles.emptyState}>
               <Target color={theme.mutedForeground} size={48} />
               <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
-                Nenhum objetivo cadastrado
+                Nenhuma meta cadastrada
               </Text>
-              <Botao onPress={openCreateDialog}>
-                <Plus size={16} color="#FFF" style={{ marginRight: 8 }} />
-                Criar Primeiro Objetivo
-              </Botao>
+              
+              {/* O <Botao> antigo foi substituído por este <TouchableOpacity> */}
+              <TouchableOpacity 
+                style={[styles.emptyAddButton, { backgroundColor: theme.primary }]} 
+                onPress={openCreateDialog}
+              >
+                <Plus size={28} color={theme.primaryForeground} />
+              </TouchableOpacity>
+
             </CardContent>
           </Card>
+          // --- FIM DA ALTERAÇÃO DO ESTADO VAZIO ---
         ) : (
           <View style={styles.grid}>
             {activeGoals.length > 0 && (
@@ -331,7 +421,6 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 28, fontWeight: '700' },
   subtitle: { fontSize: 16, marginTop: 4 },
-  addButton: { padding: 10, borderRadius: 20 },
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 16 },
   form: { gap: 12 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
@@ -345,4 +434,30 @@ const styles = StyleSheet.create({
   cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  
+  fakeInput: {
+    height: 44,
+    width: '100%',
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    justifyContent: 'center', 
+  },
+
+  // --- NOVO ESTILO ADICIONADO PARA O BOTÃO CIRCULAR ---
+  emptyAddButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30, // Metade da largura/altura para ser um círculo
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8, // Espaçamento
+    // Sombra sutil para combinar com os cards
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  
 });

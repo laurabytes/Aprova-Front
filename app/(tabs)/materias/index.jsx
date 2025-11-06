@@ -1,21 +1,21 @@
-// laurabytes/teste/teste-2245de4fd0484947e9d28a093b91aba0b792499b/app/(tabs)/materias/index.jsx
-import { Link, useRouter } from 'expo-router'; // Importado useRouter para navegação
-import { BookOpen, Edit, Plus, Trash2 } from 'lucide-react-native'; // Importados Check e X para edição
+// app/(tabs)/materias/index.jsx
+import { Link, useRouter } from 'expo-router'; 
+import { BookOpen, Edit, Plus, Trash2 } from 'lucide-react-native'; 
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Modal, // Importado Modal
-  Pressable, // Importado Pressable
+  Modal, 
+  Pressable, 
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text, // Importado TextInput para edição
+  Text, 
   TouchableOpacity,
   useColorScheme,
   View
 } from 'react-native';
-import ColorPicker from 'react-native-wheel-color-picker'; // Importado ColorPicker
+import ColorPicker from 'react-native-wheel-color-picker'; 
 import { Botao } from '../../../componentes/Botao';
 import { CampoDeTexto } from '../../../componentes/CampoDeTexto';
 import {
@@ -30,13 +30,10 @@ import { Textarea } from '../../../componentes/Textarea';
 import { useAuth } from '../../../contexto/AuthContexto';
 import { cores } from '../../../tema/cores';
 
-// Mock de dados inicial (Mantido o seu original)
-let MOCK_SUBJECTS = [
-  { id: 1, nome: 'Matemática', descricao: 'Álgebra e Geometria', usuarioId: 1, cor: '#4A90E2' },
-  { id: 2, nome: 'História', descricao: 'História do Brasil', usuarioId: 1, cor: '#FFD6E5' },
-];
+// ALTERAÇÃO 1: Mock de dados removido
+// let MOCK_SUBJECTS = [ ... ];
 
-// Função helper para decidir a cor do texto
+// Função helper para decidir a cor do texto (sem alteração)
 function getTextColorForBackground(hexColor) {
   try {
     const hex = hexColor.replace('#', '');
@@ -44,7 +41,6 @@ function getTextColorForBackground(hexColor) {
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-    // Usando 180 como limite de contraste (similar a 140 para tema light)
     return luminance > 180 ? cores.light.foreground : cores.light.primaryForeground; 
   } catch (e) {
     return cores.light.foreground; 
@@ -53,34 +49,33 @@ function getTextColorForBackground(hexColor) {
 
 export default function TelaMaterias() {
   const { user } = useAuth();
-  const router = useRouter(); 
+  const router = useRouter();
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
+  // ALTERAÇÃO 2: O estado 'subjects' já começa vazio (correto)
   const [subjects, setSubjects] = useState([]); 
-  const [isLoading, setIsLoading] = useState(false); 
-  const [isPageLoading, setIsPageLoading] = useState(true); 
-  const [isDialogOpen, setIsDialogOpen] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // Estados para Color Picker: Removido popoverPosition e touchableRefs
   const [isColorPickerVisible, setColorPickerVisible] = useState(false);
   const [currentColor, setCurrentColor] = useState(cores.light.primary);
-  const [colorTarget, setColorTarget] = useState(null); // 'add' ou 'edit'
+  const [colorTarget, setColorTarget] = useState(null);
   
   const [editingSubject, setEditingSubject] = useState(null);
-  const [formData, setFormData] = useState({ nome: '', descricao: '', cor: cores.light.primary }); 
+  const [formData, setFormData] = useState({ nome: '', descricao: '', cor: cores.light.primary });
 
+  // ALTERAÇÃO 3: useEffect modificado para não carregar mais o MOCK_SUBJECTS
   useEffect(() => {
     setIsPageLoading(true);
-    setTimeout(() => {
-      if (user) {
-        setSubjects(MOCK_SUBJECTS.filter(s => s.usuarioId === user.id));
-      }
-      setIsPageLoading(false);
-    }, 500);
+    // No futuro, você pode carregar dados do AsyncStorage aqui
+    // Por enquanto, apenas garantimos que começa vazio
+    setSubjects([]);
+    setIsPageLoading(false);
   }, [user]);
 
-  // --- Lógica de Abertura do Color Picker (SIMPLIFICADA) ---
+  // --- Lógica de Abertura do Color Picker (sem alteração) ---
   const openColorPicker = (target, initialColor) => {
     setColorTarget(target);
     setCurrentColor(initialColor);
@@ -92,19 +87,17 @@ export default function TelaMaterias() {
   };
   
   const handleConfirmColor = () => {
-    // Aplica a cor selecionada ao form (formData)
     setFormData(prev => ({ ...prev, cor: currentColor }));
     setColorPickerVisible(false);
   }
 
-  // --- Lógica de Form (Modal Simples) ---
+  // --- Lógica de Form (sem alteração) ---
   const handleSubmit = async () => {
     setIsLoading(true);
     await new Promise(res => setTimeout(res, 300)); 
 
     try {
       if (editingSubject) {
-        // Atualiza a matéria
         setSubjects(prev => 
           prev.map(s => 
             s.id === editingSubject.id 
@@ -113,7 +106,6 @@ export default function TelaMaterias() {
           )
         );
       } else {
-        // Cria nova matéria
         const newSubject = {
           ...formData,
           id: Math.random(), 
@@ -146,7 +138,6 @@ export default function TelaMaterias() {
   };
 
   const openEditDialog = (subject) => {
-    // Certifique-se de que a cor está no formData correto
     setEditingSubject(subject);
     setFormData({ nome: subject.nome, descricao: subject.descricao, cor: subject.cor });
     setIsDialogOpen(true);
@@ -158,7 +149,6 @@ export default function TelaMaterias() {
     setIsDialogOpen(true);
   };
   
-  // --- Novo componente de visualização de cor para o Modal ---
   const ColorPreviewSelector = ({ onPress, color }) => (
     <TouchableOpacity style={styles.colorPreviewTouchable} onPress={onPress}>
       <View style={[styles.colorPreview, { backgroundColor: color }]} />
@@ -186,7 +176,7 @@ export default function TelaMaterias() {
         </View>
 
         {/* ============================================================== */}
-        {/* MODAL DE CRIAÇÃO/EDIÇÃO */}
+        {/* MODAL DE CRIAÇÃO/EDIÇÃO (sem alteração) */}
         {/* ============================================================== */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <View>
@@ -215,7 +205,6 @@ export default function TelaMaterias() {
                 />
               </View>
               
-              {/* CAMPO DE COR */}
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: theme.foreground }]}>Cor</Text>
                 <ColorPreviewSelector
@@ -223,7 +212,6 @@ export default function TelaMaterias() {
                   onPress={() => openColorPicker(editingSubject ? 'edit' : 'add', formData.cor)}
                 />
               </View>
-              {/* FIM CAMPO DE COR */}
 
               <View style={styles.dialogActions}>
                 <Botao variant="destructive" onPress={() => setIsDialogOpen(false)}>
@@ -239,6 +227,7 @@ export default function TelaMaterias() {
 
         {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
 
+        {/* ALTERAÇÃO 4: Esta lógica agora mostrará o estado vazio primeiro */}
         {!isPageLoading && subjects.length === 0 ? (
           <Card>
             <CardContent style={styles.emptyState}>
@@ -293,7 +282,7 @@ export default function TelaMaterias() {
       </ScrollView>
 
       {/* ============================================================== */}
-      {/* MODAL DO COLOR PICKER (Corrigido e Simplificado) */}
+      {/* MODAL DO COLOR PICKER (sem alteração) */}
       {/* ============================================================== */}
       <Modal visible={isColorPickerVisible} transparent={true} animationType="fade" onRequestClose={() => setColorPickerVisible(false)}>
         <Pressable style={styles.overlay} onPress={() => setColorPickerVisible(false)} />
@@ -323,13 +312,12 @@ export default function TelaMaterias() {
           </Card>
         </View>
       </Modal>
-      {/* FIM MODAL COLOR PICKER */}
     </SafeAreaView>
   );
 }
 
 // ==============================================================
-// ESTILOS
+// ESTILOS (sem alteração)
 // ==============================================================
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -371,7 +359,6 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 20,
   },
-  // --- Estilos do Color Picker ---
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -415,5 +402,4 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     color: cores.light.mutedForeground,
   },
-  // FIM Estilos do Color Picker
 });

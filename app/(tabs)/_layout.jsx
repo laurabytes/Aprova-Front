@@ -1,3 +1,4 @@
+// app/(tabs)/_layout.jsx
 
 import { Tabs } from 'expo-router';
 import { useColorScheme } from 'react-native';
@@ -44,7 +45,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="objetivos"
         options={{
-          title: 'Objetivos',
+          // ALTERAÇÃO 1: Renomeado o título da aba
+          title: 'Metas',
           tabBarIcon: ({ color }) => <Target size={24} color={color} />,
           headerShown: false,
         }}
@@ -68,12 +70,12 @@ export default function TabsLayout() {
 
       {}
       <Tabs.Screen
-        name="perfil" 
+        name="perfil"
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color }) => <UserCircle size={24} color={color} />,
           headerShown: false,
-          href: null, 
+          href: null,
         }}
       />
     </Tabs>

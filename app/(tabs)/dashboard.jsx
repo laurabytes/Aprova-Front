@@ -1,3 +1,4 @@
+// app/(tabs)/dashboard.jsx
 
 import { useRouter } from 'expo-router';
 import {
@@ -33,7 +34,7 @@ const MOCK_DASHBOARD_DATA = {
   1: {
     materias: 2,
     flashcards: 3,
-    objetivos: 1,
+    objetivos: 1, // O nome da chave interna (objetivos) pode manter
     pomodoro: 5,
     performance: [
       { dia: 'Seg', valor: 20 },
@@ -138,7 +139,7 @@ export default function TelaDashboard() {
   const { user } = useAuth();
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
-  const router = useRouter(); 
+  const router = useRouter();
 
   const [stats, setStats] = useState({
     materias: 0,
@@ -198,10 +199,11 @@ export default function TelaDashboard() {
             description="flashcards criados"
             icon={TrendingUp}
           />
+          {/* ALTERAÇÃO 2: Renomeado o card de estatística */}
           <StatCard
-            title="Objetivos"
+            title="Metas"
             value={stats.objetivos}
-            description="objetivos ativos"
+            description="metas ativas"
             icon={Target}
           />
           <StatCard

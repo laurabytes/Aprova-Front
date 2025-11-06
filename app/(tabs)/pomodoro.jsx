@@ -173,7 +173,7 @@ export default function TelaPomodoro() {
                   <Coffee color={theme.foreground} size={20} />
                 )}
                 <Text style={{ color: theme.foreground, marginLeft: 8 }}>
-                  {sessionType === 'TRABALHO' ? 'Sessão de Trabalho' : 'Pausa'}
+                  {sessionType === 'TRABALHO' ? 'Sessão de Estudo' : 'Pausa'}
                 </Text>
               </CardTitle>
             </CardHeader>
