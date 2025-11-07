@@ -1,6 +1,6 @@
 // app/(tabs)/materias/index.jsx
-import { Link, useRouter } from 'expo-router'; 
-import { BookOpen, Edit, Plus, Trash2 } from 'lucide-react-native'; 
+import { Link, useRouter } from 'expo-router';
+import { BookOpen, Edit, Plus, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,12 +9,12 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text, 
+  Text,
   TouchableOpacity,
   useColorScheme,
   View
 } from 'react-native';
-import ColorPicker from 'react-native-wheel-color-picker'; 
+import ColorPicker from 'react-native-wheel-color-picker';
 import { Botao } from '../../../componentes/Botao';
 import { CampoDeTexto } from '../../../componentes/CampoDeTexto';
 import {
@@ -37,9 +37,9 @@ function getTextColorForBackground(hexColor) {
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-    return luminance > 180 ? cores.light.foreground : cores.light.primaryForeground; 
+    return luminance > 180 ? cores.light.foreground : cores.light.primaryForeground;
   } catch (e) {
-    return cores.light.foreground; 
+    return cores.light.foreground;
   }
 }
 
@@ -49,17 +49,15 @@ export default function TelaMaterias() {
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
-  const [subjects, setSubjects] = useState([]); 
+  const [subjects, setSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
-  
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [dialogStep, setDialogStep] = useState('form');
-  
-  const [currentColor, setCurrentColor] = useState(cores.light.primary);
-  
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
   const [editingSubject, setEditingSubject] = useState(null);
-  const [formData, setFormData] = useState({ nome: '', descricao: '', cor: cores.light.primary });
+  const [formData, setFormData] = useState({ nome: '', descricao: '', cor: theme.primary });
 
   useEffect(() => {
     setIsPageLoading(true);
@@ -67,44 +65,38 @@ export default function TelaMaterias() {
     setIsPageLoading(false);
   }, [user]);
 
-  
-  // (Lógica de troca de estado do Dialog... sem alteração)
-  const openColorPicker = () => {
-    setCurrentColor(formData.cor);
-    setDialogStep('color');
-  };
-  const handleConfirmColor = () => {
-    setFormData(prev => ({ ...prev, cor: currentColor }));
-    setDialogStep('form');
-  }
-  const handleCancelColor = () => {
-    setDialogStep('form');
-  }
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
-    setDialogStep('form');
+    setShowColorPicker(false);
     setEditingSubject(null);
     setFormData({ nome: '', descricao: '', cor: theme.primary });
   }
 
-  // (Funções handleSubmit, handleDelete... sem alteração)
   const handleSubmit = async () => {
+    // ==============================================================
+    // ALTERAÇÃO 2: Adicionada Validação
+    // ==============================================================
+    if (formData.nome.trim() === '') {
+      Alert.alert('Campo Obrigatório', 'Por favor, preencha o nome da matéria.');
+      return; // Impede o envio
+    }
+    
     setIsLoading(true);
-    await new Promise(res => setTimeout(res, 300)); 
+    await new Promise(res => setTimeout(res, 300));
 
     try {
       if (editingSubject) {
-        setSubjects(prev => 
-          prev.map(s => 
-            s.id === editingSubject.id 
-            ? { ...s, nome: formData.nome, descricao: formData.descricao, cor: formData.cor } 
-            : s
+        setSubjects(prev =>
+          prev.map(s =>
+            s.id === editingSubject.id
+              ? { ...s, nome: formData.nome, descricao: formData.descricao, cor: formData.cor }
+              : s
           )
         );
       } else {
         const newSubject = {
           ...formData,
-          id: Math.random(), 
+          id: Math.random(),
           usuarioId: user?.id,
           cor: formData.cor,
         };
@@ -117,6 +109,7 @@ export default function TelaMaterias() {
       setIsLoading(false);
     }
   };
+  
   const handleDelete = async (id) => {
     Alert.alert('Excluir Matéria', 'Tem certeza que deseja excluir?', [
       { text: 'Cancelar', style: 'cancel' },
@@ -129,29 +122,54 @@ export default function TelaMaterias() {
       },
     ]);
   };
+  
   const openEditDialog = (subject) => {
     setEditingSubject(subject);
     setFormData({ nome: subject.nome, descricao: subject.descricao, cor: subject.cor });
-    setDialogStep('form');
+    setShowColorPicker(false);
     setIsDialogOpen(true);
   };
+  
   const openCreateDialog = () => {
     setEditingSubject(null);
     setFormData({ nome: '', descricao: '', cor: theme.primary });
-    setDialogStep('form');
+    setShowColorPicker(false);
     setIsDialogOpen(true);
   };
+  
+  // ==============================================================
+  // ALTERAÇÃO 1: Estilos do botão de cor agora usam o 'theme'
+  // ==============================================================
   const ColorPreviewSelector = ({ onPress, color }) => (
-    <TouchableOpacity style={styles.colorPreviewTouchable} onPress={onPress}>
-      <View style={[styles.colorPreview, { backgroundColor: color }]} />
-      <Text style={styles.colorValueText}>{color?.toUpperCase()}</Text>
+    <TouchableOpacity 
+      // Os estilos agora são inline para acessar o 'theme'
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        borderWidth: 1,
+        borderColor: theme.border, // <- Corrigido
+        borderRadius: 8,
+        padding: 8,
+        backgroundColor: theme.card, // <- Corrigido
+        height: 44,
+      }} 
+      onPress={onPress}
+    >
+      <View style={[styles.colorPreview, { backgroundColor: color, borderColor: theme.border }]} />
+      <Text style={{ fontSize: 14, color: theme.mutedForeground }}> 
+        {color?.toUpperCase()}
+      </Text>
     </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* (Header... sem alteração) */}
         <View style={styles.headerRow}>
           <View>
@@ -168,97 +186,80 @@ export default function TelaMaterias() {
           </TouchableOpacity>
         </View>
 
-        {/* ============================================================== */}
-        {/* 1. DIÁLOGO COM LAYOUT CORRIGIDO */}
-        {/* ============================================================== */}
+        {/* (Dialog e Formulário... sem alteração no layout) */}
         <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-            {dialogStep === 'form' ? (
-              // ==================
-              // PASSO 1: FORMULÁRIO (Sem alteração)
-              // ==================
-              <View>
-                <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
-                  {editingSubject ? 'Editar Matéria' : 'Nova Matéria'}
-                </Text>
-                <Text style={[styles.dialogDescription, { color: theme.mutedForeground }]}>
-                  {editingSubject ? 'Edite as informações da matéria' : 'Adicione uma nova matéria'}
-                </Text>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
+              {editingSubject ? 'Editar Matéria' : 'Nova Matéria'}
+            </Text>
+            <Text style={[styles.dialogDescription, { color: theme.mutedForeground }]}>
+              {editingSubject ? 'Edite as informações da matéria' : 'Adicione uma nova matéria'}
+            </Text>
 
-                <View style={styles.form}>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.foreground }]}>Nome</Text>
-                    <CampoDeTexto
-                      value={formData.nome}
-                      onChangeText={(t) => setFormData({ ...formData, nome: t })}
-                      placeholder="Ex: Matemática"
-                    />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.foreground }]}>Descrição</Text>
-                    <Textarea
-                      value={formData.descricao}
-                      onChangeText={(t) => setFormData({ ...formData, descricao: t })}
-                      placeholder="Descreva a matéria"
-                    />
-                  </View>
-                  
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.foreground }]}>Cor</Text>
-                    <ColorPreviewSelector
-                      color={formData.cor}
-                      onPress={openColorPicker} 
-                    />
-                  </View>
-
-                  <View style={styles.dialogActions}>
-                    <Botao variant="destructive" onPress={handleCloseDialog}>
-                      Cancelar
-                    </Botao>
-                    <Botao onPress={handleSubmit} disabled={isLoading}>
-                      {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingSubject ? 'Salvar' : 'Criar')}
-                    </Botao>
-                  </View>
-                </View>
+            <View style={styles.form}>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: theme.foreground }]}>Nome</Text>
+                <CampoDeTexto
+                  value={formData.nome}
+                  onChangeText={(t) => setFormData({ ...formData, nome: t })}
+                  placeholder="Ex: Matemática"
+                />
               </View>
-            ) : (
-              // ==================
-              // PASSO 2: SELETOR DE COR (Layout Corrigido)
-              // ==================
-              <View>
-                <Text style={[styles.dialogTitle, { color: theme.foreground, marginBottom: 8 }]}>
-                  Selecione a Cor
-                </Text>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: theme.foreground }]}>Descrição</Text>
+                <Textarea
+                  value={formData.descricao}
+                  onChangeText={(t) => setFormData({ ...formData, descricao: t })}
+                  placeholder="Descreva a matéria"
+                />
+              </View>
 
-                {/* BOTÕES VÊM PRIMEIRO (como na sua foto original) */}
-                <View style={styles.colorPickerActions}>
-                    <Botao variant="destructive" onPress={handleCancelColor} style={{ flex: 1 }}>
-                        Cancelar
-                    </Botao>
-                    <Botao onPress={handleConfirmColor} style={{ flex: 1 }}>
-                        Confirmar
-                    </Botao>
-                </View>
-                
-                {/* O SELETOR VEM DEPOIS */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: theme.foreground }]}>Cor</Text>
+                <ColorPreviewSelector
+                  color={formData.cor}
+                  onPress={() => setShowColorPicker(prev => !prev)}
+                />
+              </View>
+              
+              {showColorPicker && (
                 <View style={styles.colorPickerContainer}>
                   <ColorPicker
-                    color={currentColor}
-                    onColorChange={setCurrentColor}
-                    thumbSize={35}
+                    color={formData.cor}
+                    onColorChange={(color) => {
+                      setFormData(prev => ({ ...prev, cor: color }));
+                    }}
+                    thumbSize={30}
                     sliderSize={20}
                     noSnap={true}
                     row={false}
                     swatches={false}
-                    // A LINHA 'style={{flex: 1}}' FOI REMOVIDA DAQUI
+                    style={{ height: 200 }} 
                   />
+                  <Botao 
+                    onPress={() => setShowColorPicker(false)} 
+                    style={{ width: '100%', marginTop: 16 }}
+                  >
+                    Confirmar Cor
+                  </Botao>
                 </View>
+              )}
+
+              <View style={styles.dialogActions}>
+                <Botao variant="destructive" onPress={handleCloseDialog}>
+                  Cancelar
+                </Botao>
+                <Botao onPress={handleSubmit} disabled={isLoading}>
+                  {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingSubject ? 'Salvar' : 'Criar')}
+                </Botao>
               </View>
-            )}
+            </View>
+          </ScrollView>
         </Dialog>
 
         {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
 
-        {/* (Lista de Matérias... sem alteração) */}
+        {/* (Estado Vazio... sem alteração) */}
         {!isPageLoading && subjects.length === 0 ? (
           <Card>
             <CardContent style={styles.emptyState}>
@@ -277,55 +278,62 @@ export default function TelaMaterias() {
           </Card>
         ) : (
           <View style={styles.grid}>
-            
-            {subjects.map((subject) => {
-                const textColor = getTextColorForBackground(subject.cor);
-                return (
-                    <Link 
-                      key={subject.id} 
-                      href={{
-                        pathname: `/(tabs)/materias/${subject.id}`,
-                        params: { 
-                          cor: subject.cor.replace('#', ''), 
-                          nome: subject.nome 
-                        }
-                      }} 
-                      asChild
-                    >
-                      <Pressable> 
-                        <Card style={[styles.card, { backgroundColor: subject.cor || theme.card }]}>
-                          <CardHeader style={{ paddingTop: 16, paddingBottom: 16, paddingHorizontal: 16 }}>
-                            <View style={styles.cardTitleRow}>
-                              <CardTitle style={{ flex: 1, color: textColor, fontSize: 20 }}>
-                                {subject.nome}
-                              </CardTitle>
-                              
-                              <TouchableOpacity onPress={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openEditDialog(subject);
-                              }}>
-                                <Edit color={textColor} size={18} />
-                              </TouchableOpacity>
-                              <TouchableOpacity onPress={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDelete(subject.id);
-                              }}>
-                                <Trash2 color={theme.destructive} size={18} />
-                              </TouchableOpacity>
-                            </View>
 
-                            {subject.descricao && (
-                              <CardDescription style={{ color: textColor, opacity: 0.8, marginTop: 8 }}>
-                                {subject.descricao}
-                              </CardDescription>
-                            )}
-                          </CardHeader>
-                        </Card>
-                      </Pressable>
-                    </Link>
-                );
+            {subjects.map((subject) => {
+              const textColor = getTextColorForBackground(subject.cor);
+              return (
+                <Link
+                  key={subject.id}
+                  href={{
+                    pathname: `/(tabs)/materias/${subject.id}`,
+                    // ==============================================================
+                    // ALTERAÇÃO 3: Passando a descrição como parâmetro
+                    // ==============================================================
+                    params: {
+                      cor: subject.cor.replace('#', ''),
+                      nome: subject.nome,
+                      descricao: subject.descricao || '' // Passa a descrição
+                    }
+                  }}
+                  asChild
+                >
+                  <Pressable>
+                    <Card style={[styles.card, { backgroundColor: subject.cor || theme.card }]}>
+                      <CardHeader style={{ paddingTop: 16, paddingBottom: 16, paddingHorizontal: 16 }}>
+                        <View style={styles.cardTitleRow}>
+                          <CardTitle style={{ flex: 1, color: textColor, fontSize: 20 }}>
+                            {subject.nome}
+                          </CardTitle>
+
+                          <TouchableOpacity onPress={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openEditDialog(subject);
+                          }}>
+                            <Edit color={textColor} size={18} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDelete(subject.id);
+                          }}>
+                            <Trash2 color={theme.destructive} size={18} />
+                          </TouchableOpacity>
+                        </View>
+
+                        {/* ==============================================================
+                        // ALTERAÇÃO 3: Descrição removida daqui
+                        // ============================================================== */}
+                        {/* {subject.descricao && (
+                          <CardDescription style={{ color: textColor, opacity: 0.8, marginTop: 8 }}>
+                            {subject.descricao}
+                          </CardDescription>
+                        )} */}
+                      </CardHeader>
+                    </Card>
+                  </Pressable>
+                </Link>
+              );
             })}
           </View>
         )}
@@ -335,7 +343,7 @@ export default function TelaMaterias() {
 }
 
 // ==============================================================
-// 2. MUDANÇA NO ESTILO
+// ALTERAÇÃO 1: Removidos estilos que foram movidos para inline
 // ==============================================================
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -369,7 +377,7 @@ const styles = StyleSheet.create({
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
   dialogDescription: { fontSize: 14, color: '#737373', marginBottom: 16 },
   form: { gap: 12 },
-  inputGroup: { width: '100%', gap: 6 }, 
+  inputGroup: { width: '100%', gap: 6 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
   dialogActions: {
     flexDirection: 'row',
@@ -378,44 +386,23 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   
-  colorPickerWrapper: {
-    width: '100%',
-    padding: 0,
-    maxHeight: '80%',
-    overflow: 'hidden', 
-  },
-  colorPickerActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-    // MARGEM ALTERADA PARA DEPOIS DOS BOTÕES
-    marginBottom: 20, 
-  },
   colorPickerContainer: {
-    height: 300,
     width: '100%',
-    alignItems: 'center', // Centraliza o seletor
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 0,
   },
-  colorPreviewTouchable: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 12, 
-    borderWidth: 1, 
-    borderColor: cores.light.border, 
-    borderRadius: 8, 
-    padding: 8, 
-    backgroundColor: cores.light.card,
-    height: 44,
+  
+  // Estilos do preview (não dependem do tema, exceto a cor de fundo)
+  colorPreview: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    // A cor da borda será aplicada inline
   },
-  colorPreview: { 
-    width: 24, 
-    height: 24, 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: cores.light.border, 
-  },
-  colorValueText: { 
-    fontSize: 14, 
-    color: cores.light.mutedForeground,
-  },
+  
+  // Estilos removidos daqui e movidos para inline:
+  // - colorPreviewTouchable
+  // - colorValueText
 });

@@ -22,7 +22,6 @@ import { cores } from '../../../tema/cores';
 // Mock de dados
 const MOCK_DATA = {
     1: { 
-        // Removido 'subject' daqui, pois agora recebemos por parâmetro
         flashcards: [
             { id: 101, pergunta: 'O que é 2+2?', resposta: '4', materiaId: 1 },
             { id: 102, pergunta: 'O que é a fórmula de Bhaskara?', resposta: 'x = [-b ± sqrt(b² - 4ac)] / 2a', materiaId: 1 },
@@ -35,7 +34,7 @@ const MOCK_DATA = {
     }
 };
 
-// ADICIONADO: Função helper para contraste da cor
+// (Função getTextColorForBackground... sem alteração)
 function getTextColorForBackground(hexColor) {
   try {
     const hex = hexColor.replace('#', '');
@@ -43,10 +42,8 @@ function getTextColorForBackground(hexColor) {
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-    // Retorna a cor de texto principal (escura) se o fundo for claro
     return luminance > 180 ? cores.light.foreground : cores.light.primaryForeground; 
   } catch (e) {
-    // Retorna a cor escura por padrão em caso de erro
     return cores.light.foreground; 
   }
 }
@@ -55,36 +52,41 @@ export default function TelaFlashcards() {
   const params = useLocalSearchParams();
   const router = useRouter();
   
-  // ALTERAÇÃO 1: Receber 'cor' e 'nome' dos parâmetros
-  const { id: subjectId, cor: corParam, nome: nomeParam } = params;
+  // ==============================================================
+  // ALTERAÇÃO 3: Recebendo 'descricaoParam'
+  // ==============================================================
+  const { id: subjectId, cor: corParam, nome: nomeParam, descricao: descricaoParam } = params;
   
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? cores.dark : cores.light;
 
   const [subject, setSubject] = useState(null);
   const [flashcards, setFlashcards] = useState([]);
-  const [isLoading, setIsLoading] = useState(false); // Form loading
+  const [isLoading, setIsLoading] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFlashcard, setEditingFlashcard] = useState(null);
   const [formData, setFormData] = useState({ pergunta: '', resposta: '' });
   const [flippedCards, setFlippedCards] = useState(new Set());
 
-  // ALTERAÇÃO 2: Estados para guardar a cor da matéria e a cor do texto
   const [subjectColor, setSubjectColor] = useState(theme.card);
   const [textColor, setTextColor] = useState(theme.foreground);
 
   useEffect(() => {
     setIsPageLoading(true);
 
-    // ALTERAÇÃO 3: Definir as cores e o nome da matéria
-    // Adiciona o '#' de volta à cor recebida
     const decodedColor = corParam ? `#${corParam}` : theme.card;
     const decodedName = nomeParam ? nomeParam : 'Matéria';
+    // ==============================================================
+    // ALTERAÇÃO 3: Usando a descrição recebida
+    // ==============================================================
+    const decodedDescription = descricaoParam ? descricaoParam : 'Flashcards para revisão';
 
     setSubjectColor(decodedColor);
-    setTextColor(getTextColorForBackground(decodedColor)); // Define a cor de texto ideal
-    setSubject({ id: subjectId, nome: decodedName }); // Define o nome no header
+    setTextColor(getTextColorForBackground(decodedColor));
+    
+    // Atualiza o estado 'subject' com a descrição
+    setSubject({ id: subjectId, nome: decodedName, descricao: decodedDescription });
 
     // Carrega os flashcards (baseado no MOCK)
     setTimeout(() => {
@@ -93,9 +95,10 @@ export default function TelaFlashcards() {
         setIsPageLoading(false);
     }, 500);
     
-    // ALTERAÇÃO 4: Adicionar 'corParam' e 'nomeParam' às dependências
-  }, [subjectId, corParam, nomeParam, theme]);
+    // Adiciona 'descricaoParam' à lista de dependências
+  }, [subjectId, corParam, nomeParam, descricaoParam, theme]);
 
+  // (O restante do código... handleSubmit, handleDelete, etc... sem alteração)
   const handleSubmit = async () => {
     setIsLoading(true);
     await new Promise(res => setTimeout(res, 300)); 
@@ -177,10 +180,13 @@ export default function TelaFlashcards() {
             <ArrowLeft color={theme.foreground} size={24} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            {/* O nome agora vem do estado 'subject' */}
+            
             <Text style={[styles.title, { color: theme.foreground }]} numberOfLines={1}>{subject?.nome}</Text>
+            {/* ==============================================================
+            // ALTERAÇÃO 3: Exibindo a descrição da matéria no subtítulo
+            // ============================================================== */}
             <Text style={[styles.subtitle, { color: theme.mutedForeground }]}>
-              Flashcards para revisão
+              {subject?.descricao || 'Flashcards para revisão'}
             </Text>
           </View>
           <TouchableOpacity 
@@ -191,6 +197,7 @@ export default function TelaFlashcards() {
           </TouchableOpacity>
         </View>
 
+        {/* (Dialog de Flashcard... sem alteração) */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <View>
             <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
@@ -221,6 +228,7 @@ export default function TelaFlashcards() {
           </View>
         </Dialog>
 
+        {/* (Estado vazio e lista de Flashcards... sem alteração) */}
         {flashcards.length === 0 ? (
            <Card>
             <CardContent style={styles.emptyState}>
@@ -236,10 +244,6 @@ export default function TelaFlashcards() {
           </Card>
         ) : (
           <View style={styles.grid}>
-            
-            {/* ============================================================== */}
-            {/* ALTERAÇÕES DE ESTILO NOS CARDS */}
-            {/* ============================================================== */}
             {flashcards.map((flashcard) => (
               <Card key={flashcard.id} style={[styles.card, { backgroundColor: subjectColor }]}>
                 <CardHeader>
@@ -260,13 +264,12 @@ export default function TelaFlashcards() {
                     {flippedCards.has(flashcard.id) ? flashcard.resposta : flashcard.pergunta}
                   </Text>
                   
-                  {/* Botão estilizado para fundos coloridos */}
                   <Botao 
                     variant="outline" 
                     onPress={() => toggleFlip(flashcard.id)}
                     style={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.2)', // Fundo semitransparente
-                      borderColor: 'transparent', // Remove a borda padrão do outline
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      borderColor: 'transparent',
                     }}
                   >
                     <FlipHorizontal size={16} color={textColor} style={{ marginRight: 8 }} />
@@ -277,10 +280,6 @@ export default function TelaFlashcards() {
                 </CardContent>
               </Card>
             ))}
-            {/* ============================================================== */}
-            {/* FIM DAS ALTERAÇÕES DE ESTILO */}
-            {/* ============================================================== */}
-            
           </View>
         )}
       </ScrollView>
