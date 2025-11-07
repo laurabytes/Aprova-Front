@@ -16,7 +16,11 @@ import {
   View
 } from 'react-native';
 
-// --- COMPONENTES IMPORTADOS ---
+// ===== INÍCIO DA IMPORTAÇÃO =====
+// Adicionando o SegmentedControl
+import SegmentedControl from '@react-native-segmented-control/segmented-control';
+// ===== FIM DA IMPORTAÇÃO =====
+
 import { Badge } from '../../componentes/Badge';
 import { Botao } from '../../componentes/Botao';
 import { CampoDeTexto } from '../../componentes/CampoDeTexto';
@@ -29,25 +33,18 @@ import {
 } from '../../componentes/Card';
 import { Dialog } from '../../componentes/Dialog';
 import { Progress } from '../../componentes/Progress';
+// O Select de progresso foi removido, então não precisamos mais dele aqui
+// AINDA PRECISAMOS dele para o Status (ops, não, vamos remover)
+// import { Select, SelectItem } from '../../componentes/Select'; 
+// import { Select } from '../../componentes/Select'; // Removido
 import { Textarea } from '../../componentes/Textarea';
 import { useAuth } from '../../contexto/AuthContexto';
 import { cores } from '../../tema/cores';
 
-// Helper para formatar AAAA-MM-DD -> DD/MM/AAAA
-const formatarDataParaBR = (isoString) => {
-  if (!isoString) return '';
-  try {
-    const [ano, mes, dia] = isoString.split('T')[0].split('-');
-    return `${dia}/${mes}/${ano}`;
-  } catch (e) {
-    return isoString; 
-  }
-};
-
 export default function TelaMetas() {
   const { user } = useAuth();
   const scheme = useColorScheme();
-  const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
+  const theme = scheme === 'dark' ? cores.dark : cores.light;
 
   const [goals, setGoals] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,6 +60,7 @@ export default function TelaMetas() {
     descricao: '',
     dataInicio: '',
     dataFim: '',
+    status: 'EM_ANDAMENTO',
     progresso: '0', 
   });
 
@@ -72,7 +70,7 @@ export default function TelaMetas() {
     setIsPageLoading(false);
   }, [user]);
   
-  // --- LÓGICA DO CALENDÁRIO ---
+  // --- LÓGICA DO CALENDÁRIO (sem alteração) ---
   const getDateValue = (dateString) => {
     if (dateString) {
       const date = new Date(dateString + 'T00:00:00'); 
@@ -111,24 +109,33 @@ export default function TelaMetas() {
   };
   // --- FIM DA LÓGICA DO CALENDÁRIO ---
 
-  // --- handleSubmit ---
   const handleSubmit = async () => {
+    
+    // ===== VALIDAÇÃO DE DATA (sem alteração) =====
     if (formData.dataFim && formData.dataInicio) {
       const dataInicio = new Date(formData.dataInicio + 'T00:00:00');
       const dataFim = new Date(formData.dataFim + 'T00:00:00');
+
       if (dataFim < dataInicio) {
         Alert.alert('Data Inválida', 'A data de fim não pode ser anterior à data de início.');
         return; 
       }
     }
+    // ===== FIM DA VALIDAÇÃO DE DATA =====
+
     setIsLoading(true);
     await new Promise(res => setTimeout(res, 300)); 
     try {
       let progressoNumerico = parseInt(formData.progresso, 10) || 0;
       let progressoValido = Math.max(0, Math.min(100, progressoNumerico)); 
-      let statusFinal = 'EM_ANDAMENTO';
-      if (progressoValido === 100) {
+      let statusFinal = formData.status;
+
+      if (formData.status === 'CONCLUIDO') {
+        progressoValido = 100;
+      } else if (progressoValido === 100) {
         statusFinal = 'CONCLUIDO';
+      } else {
+        statusFinal = 'EM_ANDAMENTO';
       }
       
       const dadosSalvos = {
@@ -162,6 +169,9 @@ export default function TelaMetas() {
     }
   };
 
+  // Funções handleDelete, toggleStatus, openEditDialog, openCreateDialog, getStatusBadge...
+  // ... (NENHUMA ALTERAÇÃO NECESSÁRIA AQUI) ...
+
   const handleDelete = async (id) => {
     Alert.alert('Excluir Meta', 'Tem certeza que deseja excluir?', [
       { text: 'Cancelar', style: 'cancel' },
@@ -178,6 +188,7 @@ export default function TelaMetas() {
   const toggleStatus = async (goal) => {
     const newStatus =
       goal.status === 'CONCLUIDO' ? 'EM_ANDAMENTO' : 'CONCLUIDO';
+      
     const newProgress = newStatus === 'CONCLUIDO' ? 100 : 0;
     
     setGoals(prev =>
@@ -192,6 +203,7 @@ export default function TelaMetas() {
       descricao: goal.descricao,
       dataInicio: goal.dataInicio ? goal.dataInicio.split('T')[0] : '',
       dataFim: goal.dataFim ? goal.dataFim.split('T')[0] : '',
+      status: goal.status,
       progresso: String(goal.progresso || 0), 
     });
     setIsDialogOpen(true);
@@ -204,6 +216,7 @@ export default function TelaMetas() {
       descricao: '',
       dataInicio: new Date().toISOString().split('T')[0],
       dataFim: '',
+      status: 'EM_ANDAMENTO',
       progresso: '0', 
     });
     setIsDialogOpen(true);
@@ -228,6 +241,7 @@ export default function TelaMetas() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* ... (Cabeçalho "Metas" - sem alteração) ... */}
         <View style={styles.headerRow}>
           <View>
             <Text style={[styles.title, { color: theme.foreground }]}>Metas</Text>
@@ -235,16 +249,16 @@ export default function TelaMetas() {
               Defina e acompanhe suas metas
             </Text>
           </View>
-           
         </View>
 
+        {/* --- MODAL / DIALOG --- */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <ScrollView 
             keyboardShouldPersistTaps="handled" 
             contentContainerStyle={{ paddingBottom: 40 }}
           >
             {showDatePickerFor ? (
-              // --- VISTA DO CALENDÁRIO (Com locale pt-BR) ---
+              // --- VISTA DO CALENDÁRIO (sem alteração) ---
               <View>
                 <Text style={[styles.dialogTitle, { color: theme.foreground, marginBottom: 16 }]}>
                   {showDatePickerFor === 'dataInicio' ? 'Selecione a Data de Início' : 'Selecione a Data de Fim'}
@@ -256,16 +270,14 @@ export default function TelaMetas() {
                   display={Platform.OS === 'android' ? 'default' : 'inline'}
                   onChange={onDateChange}
                   style={{ marginBottom: 16 }}
-                  locale="pt-BR" 
                 />
 
                 {Platform.OS !== 'android' && (
                   <View style={styles.dialogActions}>
-                    {/* Botões do DatePicker Modal (iOS) */}
-                    <Botao variant="outline" onPress={cancelDate} style={styles.dialogButton}>
+                    <Botao variant="outline" onPress={cancelDate} style={{ flex: 1 }}>
                       Cancelar
                     </Botao>
-                    <Botao onPress={confirmDate} style={styles.dialogButton}>
+                    <Botao onPress={confirmDate} style={{ flex: 1 }}>
                       Confirmar
                     </Botao>
                   </View>
@@ -273,7 +285,7 @@ export default function TelaMetas() {
               </View>
 
             ) : (
-              // --- VISTA DO FORMULÁRIO ---
+              // --- VISTA DO FORMULÁRIO (COM ALTERAÇÕES) ---
               <View>
                 <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
                   {editingGoal ? 'Editar Meta' : 'Nova Meta'}
@@ -292,13 +304,14 @@ export default function TelaMetas() {
                     placeholder="Descreva sua meta (opcional)"
                   />
                   
+                  {/* ... (Campos de Data - sem alteração) ... */}
                   <Text style={[styles.label, { color: theme.foreground }]}>Data Início</Text>
                   <TouchableOpacity 
                     style={[styles.fakeInput, { borderColor: theme.border, backgroundColor: theme.card }]}
                     onPress={() => openDatePicker('dataInicio')}
                   >
                     <Text style={[{ fontSize: 14, color: formData.dataInicio ? theme.foreground : theme.mutedForeground }]}>
-                      {formatarDataParaBR(formData.dataInicio) || 'DD/MM/AAAA'}
+                      {formData.dataInicio || 'AAAA-MM-DD'}
                     </Text>
                   </TouchableOpacity>
 
@@ -308,27 +321,52 @@ export default function TelaMetas() {
                     onPress={() => openDatePicker('dataFim')}
                   >
                     <Text style={[{ fontSize: 14, color: formData.dataFim ? theme.foreground : theme.mutedForeground }]}>
-                      {formatarDataParaBR(formData.dataFim) || 'DD/MM/AAAA'}
+                      {formData.dataFim || 'AAAA-MM-DD'}
                     </Text>
                   </TouchableOpacity>
 
+                  {/* ===== INÍCIO DA ALTERAÇÃO 1 (Progresso) ===== */}
+                  {/* Trocando o <Select> por <CampoDeTexto> */}
                   <Text style={[styles.label, { color: theme.foreground }]}>Progresso (%)</Text>
                   <CampoDeTexto
                     value={formData.progresso}
                     onChangeText={(p) => {
+                      // Garante que apenas números sejam inseridos
                       const num = p.replace(/[^0-9]/g, '');
                       setFormData({ ...formData, progresso: num });
                     }}
                     placeholder="0"
                     keyboardType="number-pad"
-                    maxLength={3}
+                    maxLength={3} // 100 é o máximo
                   />
+                  {/* ===== FIM DA ALTERAÇÃO 1 ===== */}
+
+
+                  {/* ===== INÍCIO DA ALTERAÇÃO 2 (Status) ===== */}
+                  {/* Trocando o <Select> por <SegmentedControl> */}
+                  <Text style={[styles.label, { color: theme.foreground }]}>Status</Text>
+                  <SegmentedControl
+                    values={['Em Andamento', 'Concluído']}
+                    // Mapeia o estado (String) para o índice (Número)
+                    selectedIndex={formData.status === 'CONCLUIDO' ? 1 : 0}
+                    onValueChange={(value) => {
+                      // Mapeia o valor do controle (String) de volta para o estado
+                      const newStatus = value === 'Concluído' ? 'CONCLUIDO' : 'EM_ANDAMENTO';
+                      setFormData({ ...formData, status: newStatus });
+                    }}
+                    style={styles.segmentedControl} // Estilo adicionado abaixo
+                    backgroundColor={theme.muted} // Fundo cinza
+                    tintColor={theme.primary} // Cor do botão ativo (azul)
+                    fontStyle={{ color: theme.foreground }}
+                    activeFontStyle={{ color: theme.primaryForeground, fontWeight: 'bold' }}
+                  />
+                  {/* ===== FIM DA ALTERAÇÃO 2 ===== */}
                   
                   <View style={styles.dialogActions}>
-                    <Botao variant="destructive-outline" onPress={() => setIsDialogOpen(false)} style={styles.dialogButton}>
+                    <Botao variant="destructive" onPress={() => setIsDialogOpen(false)}>
                       Cancelar
                     </Botao>
-                    <Botao onPress={handleSubmit} disabled={isLoading} style={styles.dialogButton}>
+                    <Botao onPress={handleSubmit} disabled={isLoading}>
                       {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingGoal ? 'Salvar' : 'Criar')}
                     </Botao>
                   </View>
@@ -338,36 +376,37 @@ export default function TelaMetas() {
           </ScrollView>
         </Dialog>
         
+        {/* ... (Resto do arquivo: DatePicker, Lista de Metas, Botão Flutuante - sem alteração) ... */}
+        
         {showDatePickerFor && Platform.OS === 'android' && (
           <DateTimePicker
             value={getDateValue(formData[showDatePickerFor])}
             mode="date"
             display="default"
             onChange={onDateChange}
-            locale="pt-BR"
           />
         )}
 
 
         {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
 
-        {/* REVERTENDO PARA O CARD DE ESTADO VAZIO COMPLETO */}
+        {/* ===== INÍCIO DO AJUSTE PARA O LAYOUT VAZIO (emptyState) ===== */}
         {!isPageLoading && goals.length === 0 ? (
-          <Card>
-            <CardContent style={styles.emptyState}>
-              <Target color={theme.mutedForeground} size={48} />
-              <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
-                Nenhuma meta cadastrada
-              </Text>
-              
-              <Botao onPress={openCreateDialog}>
-                <Plus size={16} color="#FFF" style={{ marginRight: 8 }} />
-                Criar Primeira Meta
-              </Botao>
-            </CardContent>
-          </Card>
+          <View style={styles.emptyContainer}>
+            <Target color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
+            <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
+              Nenhuma meta cadastrada
+            </Text>
+            <Text style={[styles.emptyText, { color: theme.mutedForeground }]}>
+              Comece criando sua primeira meta e alcançando seus objetivos!
+            </Text>
+            {/* Botão de criação (agora Botao) */}
+            <Botao onPress={openCreateDialog} style={styles.emptyButton}>
+              <Plus size={18} color={theme.primaryForeground} style={{ marginRight: 8 }} />
+              Criar Primeira Meta
+            </Botao>
+          </View>
         ) : (
-        
           <View style={styles.grid}>
             {activeGoals.length > 0 && (
               <View style={styles.section}>
@@ -403,7 +442,7 @@ export default function TelaMetas() {
                       </View>
                       <View style={styles.cardFooter}>
                         <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
-                          {formatarDataParaBR(goal.dataInicio)} {goal.dataFim ? `- ${formatarDataParaBR(goal.dataFim)}` : ''}
+                          {goal.dataInicio} {goal.dataFim ? `- ${goal.dataFim}` : ''}
                         </Text>
                         {getStatusBadge(goal.status)}
                       </View>
@@ -426,9 +465,6 @@ export default function TelaMetas() {
                         <TouchableOpacity onPress={() => toggleStatus(goal)}>
                           <CheckCircle2 color={theme.primary} size={18} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => openEditDialog(goal)}>
-                          <Edit color={theme.mutedForeground} size={18} />
-                        </TouchableOpacity>
                         <TouchableOpacity onPress={() => handleDelete(goal.id)}>
                           <Trash2 color={theme.destructive} size={18} />
                         </TouchableOpacity>
@@ -447,7 +483,7 @@ export default function TelaMetas() {
                       </View>
                       <View style={styles.cardFooter}>
                         <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
-                          {formatarDataParaBR(goal.dataInicio)} {goal.dataFim ? `- ${formatarDataParaBR(goal.dataFim)}` : ''}
+                          {goal.dataInicio} {goal.dataFim ? `- ${goal.dataFim}` : ''}
                         </Text>
                         {getStatusBadge(goal.status)}
                       </View>
@@ -460,10 +496,9 @@ export default function TelaMetas() {
         )}
       </ScrollView>
 
-      {/* Botão flutuante só aparece se houver metas na lista */}
       {!isPageLoading && goals.length > 0 && (
         <TouchableOpacity 
-          style={[styles.emptyAddButton, styles.floatingButton, { backgroundColor: theme.primary }]} 
+          style={[styles.roundFloatingButtonBase, styles.floatingButton, { backgroundColor: theme.primary }]} 
           onPress={openCreateDialog}
         >
           <Plus size={28} color={theme.primaryForeground} />
@@ -476,28 +511,16 @@ export default function TelaMetas() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 20, gap: 24, paddingBottom: 100, flexGrow: 1 }, 
+  scrollContent: { padding: 20, gap: 24, paddingBottom: 100 }, 
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 28, fontWeight: '700' },
   subtitle: { fontSize: 16, marginTop: 4 },
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 16 },
   form: { gap: 12 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
-  
-  // Estilos de Modal/Botões
   dialogActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 20 },
-  dialogButton: {
-    flex: 1, // Torna os botões proporcionais (50%/50%)
-  },
+  // Removido emptyState
 
-  // ESTILOS ESTADO VAZIO (Card completo - como a tela de matérias)
-  emptyState: { 
-    paddingVertical: 48, 
-    alignItems: 'center', 
-    gap: 16,
-  },
-  emptyTitle: { fontSize: 18, fontWeight: '600' },
-  
   grid: { gap: 24 },
   section: { gap: 16 },
   sectionTitle: { fontSize: 20, fontWeight: '600' },
@@ -515,7 +538,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
   },
 
-  emptyAddButton: {
+  // NOVO: Base para o botão flutuante redondo (antigo emptyAddButton)
+  roundFloatingButtonBase: {
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -535,5 +559,42 @@ const styles = StyleSheet.create({
     elevation: 8, 
     shadowOpacity: 0.1,
     shadowRadius: 4,
-  }
+  },
+  
+  // =======================================================
+  // ESTILOS DO ESTADO VAZIO (emptyState) - NOVO LAYOUT
+  // =======================================================
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 16,
+    minHeight: 400, 
+  },
+  emptyIcon: {
+    marginBottom: 16, 
+    opacity: 0.8,
+  },
+  // Ajustado para se parecer com a tela de matérias (maior/mais ousado)
+  emptyTitle: { 
+    fontSize: 22, 
+    fontWeight: '700',
+    textAlign: 'center', 
+  },
+  emptyText: { 
+    textAlign: 'center',
+    fontSize: 16, 
+    marginBottom: 16, 
+  },
+  emptyButton: {
+    paddingHorizontal: 24,
+    width: 'auto',
+    minWidth: 200,
+  },
+  // =======================================================
+
+  segmentedControl: {
+    height: 44, 
+  },
 });

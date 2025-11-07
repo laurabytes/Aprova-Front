@@ -76,7 +76,11 @@ export default function TelaMaterias() {
 
   useEffect(() => {
     setIsPageLoading(true);
-    setSubjects([]); // Deixando vazio para testar o estado vazio
+    // Simulação: Carrega as matérias (que têm as cores)
+    setSubjects([
+      { id: 1, nome: 'Matemática', descricao: 'Cálculos e fórmulas', cor: '#3b82f6', usuarioId: user?.id },
+      { id: 2, nome: 'História', descricao: 'História do Brasil', cor: '#ef4444', usuarioId: user?.id },
+    ]);
     setIsPageLoading(false);
   }, [user]);
 
@@ -149,21 +153,29 @@ export default function TelaMaterias() {
     setIsDialogOpen(true);
   };
 
+  // ===== INÍCIO DA ALTERAÇÃO =====
+  // Função para iniciar a sessão mista
   const handleStartMixedSession = () => {
+    
+    // 1. Criar um mapa de ID da Matéria para Cor
     const subjectColorMap = new Map();
     subjects.forEach(subject => {
       subjectColorMap.set(subject.id, subject.cor);
     });
 
     let allFlashcards = [];
+
+    // 2. Itera sobre o MOCK_DATA (que tem os flashcards)
     Object.keys(MOCK_DATA).forEach(materiaId => {
+      // Verifica se a matéria (com a cor) ainda existe no estado 'subjects'
       const materiaColor = subjectColorMap.get(Number(materiaId));
       
       if (materiaColor) {
         const materiaFlashcards = MOCK_DATA[materiaId].flashcards;
+        // 3. Adiciona a cor a cada flashcard
         const flashcardsWithColor = materiaFlashcards.map(fc => ({
           ...fc,
-          cor: materiaColor,
+          cor: materiaColor, // Adiciona a cor da matéria
         }));
         allFlashcards = allFlashcards.concat(flashcardsWithColor);
       }
@@ -174,18 +186,21 @@ export default function TelaMaterias() {
       return;
     }
 
+    // 4. Embaralha o deck
     for (let i = allFlashcards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [allFlashcards[i], allFlashcards[j]] = [allFlashcards[j], allFlashcards[i]];
     }
 
+    // 5. Navega para a tela de revisão, passando os dados como JSON
     router.push({
       pathname: '/(tabs)/materias/revisao',
       params: {
-        deck: JSON.stringify(allFlashcards),
+        deck: JSON.stringify(allFlashcards), // Serializa o deck
       },
     });
   };
+  // ===== FIM DA ALTERAÇÃO =====
   
   const ColorPreviewSelector = ({ onPress, color }) => (
     <TouchableOpacity 
@@ -232,19 +247,17 @@ export default function TelaMaterias() {
               <Shuffle color={theme.foreground} size={20} />
             </TouchableOpacity>
 
-            {/* Condição: Mostra o botão "+" do header APENAS se houver matérias */}
-            {!isPageLoading && subjects.length > 0 && (
-              <TouchableOpacity
-                style={[styles.headerButton, { backgroundColor: theme.primary }]} // Botão de Adicionar
-                onPress={openCreateDialog}
-              >
-                <Plus color={theme.primaryForeground} size={20} />
-              </TouchableOpacity>
-            )}
-
+            <TouchableOpacity
+              style={[styles.headerButton, { backgroundColor: theme.primary }]} // Botão de Adicionar
+              onPress={openCreateDialog}
+            >
+              <Plus color={theme.primaryForeground} size={20} />
+            </TouchableOpacity>
           </View>
 
         </View>
+
+        {/* O resto do arquivo (Dialog, map, styles) permanece igual */}
         
         <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
           <ScrollView keyboardShouldPersistTaps="handled">
@@ -305,10 +318,10 @@ export default function TelaMaterias() {
               )}
 
               <View style={styles.dialogActions}>
-                <Botao variant="destructive-outline" onPress={handleCloseDialog} style={styles.dialogButton}>
+                <Botao variant="destructive" onPress={handleCloseDialog}>
                   Cancelar
                 </Botao>
-                <Botao onPress={handleSubmit} disabled={isLoading} style={styles.dialogButton}>
+                <Botao onPress={handleSubmit} disabled={isLoading}>
                   {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingSubject ? 'Salvar' : 'Criar')}
                 </Botao>
               </View>
@@ -318,22 +331,23 @@ export default function TelaMaterias() {
 
         {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
 
+        {/* ===== INÍCIO DO AJUSTE PARA O LAYOUT VAZIO (emptyState) ===== */}
         {!isPageLoading && subjects.length === 0 ? (
-          <Card>
-            <CardContent style={styles.emptyState}>
-              <BookOpen color={theme.mutedForeground} size={48} />
+          // Usamos um View em vez de Card para ter fundo transparente (cor de fundo da tela), como na imagem.
+          <View style={styles.emptyContainer}> 
+              <BookOpen color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
               <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
                 Nenhuma matéria cadastrada
               </Text>
               <Text style={[styles.emptyText, { color: theme.mutedForeground }]}>
-                Comece criando sua primeira matéria
+                Comece criando sua primeira matéria e flashcards.
               </Text>
-              <Botao onPress={openCreateDialog}>
-                <Plus size={16} color="#FFF" style={{ marginRight: 8 }} />
+              {/* O botão usa texto e ícone, com o padding ajustado */}
+              <Botao onPress={openCreateDialog} style={styles.emptyButton}>
+                <Plus size={18} color={theme.primaryForeground} style={{ marginRight: 8 }} />
                 Criar Primeira Matéria
               </Botao>
-            </CardContent>
-          </Card>
+          </View>
         ) : (
           <View style={styles.grid}>
             {subjects.map((subject) => {
@@ -417,13 +431,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  emptyState: {
-    paddingVertical: 48,
+  
+  // =======================================================
+  // ESTILOS DO ESTADO VAZIO (emptyState) - AJUSTADOS
+  // =======================================================
+  emptyContainer: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
     gap: 16,
+    minHeight: 400, // Garante que ocupe o espaço disponível
   },
-  emptyTitle: { fontSize: 18, fontWeight: '600' },
-  emptyText: { textAlign: 'center' },
+  emptyIcon: {
+    marginBottom: 16, 
+    opacity: 0.8,
+  },
+  emptyTitle: { 
+    fontSize: 22, // Aumentado para 22
+    fontWeight: '700', // Aumentado para 700
+  },
+  emptyText: { 
+    textAlign: 'center',
+    fontSize: 16, // Aumentado para 16
+    marginBottom: 16, // Mais espaço antes do botão
+  },
+  emptyButton: {
+    paddingHorizontal: 24, // Ajusta o padding para o botão da imagem
+  },
+  // O antigo emptyState foi removido e substituído por emptyContainer
+  // =======================================================
+
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
   dialogDescription: { fontSize: 14, color: '#737373', marginBottom: 16 },
   form: { gap: 12 },
@@ -434,9 +472,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
     marginTop: 20,
-  },
-  dialogButton: {
-    flex: 1, // Torna os botões proporcionais (50%/50%)
   },
   
   colorPickerContainer: {
