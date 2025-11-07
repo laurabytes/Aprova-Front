@@ -76,11 +76,7 @@ export default function TelaMaterias() {
 
   useEffect(() => {
     setIsPageLoading(true);
-    // Simulação: Carrega as matérias (que têm as cores)
-    setSubjects([
-      { id: 1, nome: 'Matemática', descricao: 'Cálculos e fórmulas', cor: '#3b82f6', usuarioId: user?.id },
-      { id: 2, nome: 'História', descricao: 'História do Brasil', cor: '#ef4444', usuarioId: user?.id },
-    ]);
+    setSubjects([]); // Deixando vazio para testar o estado vazio
     setIsPageLoading(false);
   }, [user]);
 
@@ -153,29 +149,21 @@ export default function TelaMaterias() {
     setIsDialogOpen(true);
   };
 
-  // ===== INÍCIO DA ALTERAÇÃO =====
-  // Função para iniciar a sessão mista
   const handleStartMixedSession = () => {
-    
-    // 1. Criar um mapa de ID da Matéria para Cor
     const subjectColorMap = new Map();
     subjects.forEach(subject => {
       subjectColorMap.set(subject.id, subject.cor);
     });
 
     let allFlashcards = [];
-
-    // 2. Itera sobre o MOCK_DATA (que tem os flashcards)
     Object.keys(MOCK_DATA).forEach(materiaId => {
-      // Verifica se a matéria (com a cor) ainda existe no estado 'subjects'
       const materiaColor = subjectColorMap.get(Number(materiaId));
       
       if (materiaColor) {
         const materiaFlashcards = MOCK_DATA[materiaId].flashcards;
-        // 3. Adiciona a cor a cada flashcard
         const flashcardsWithColor = materiaFlashcards.map(fc => ({
           ...fc,
-          cor: materiaColor, // Adiciona a cor da matéria
+          cor: materiaColor,
         }));
         allFlashcards = allFlashcards.concat(flashcardsWithColor);
       }
@@ -186,21 +174,18 @@ export default function TelaMaterias() {
       return;
     }
 
-    // 4. Embaralha o deck
     for (let i = allFlashcards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [allFlashcards[i], allFlashcards[j]] = [allFlashcards[j], allFlashcards[i]];
     }
 
-    // 5. Navega para a tela de revisão, passando os dados como JSON
     router.push({
       pathname: '/(tabs)/materias/revisao',
       params: {
-        deck: JSON.stringify(allFlashcards), // Serializa o deck
+        deck: JSON.stringify(allFlashcards),
       },
     });
   };
-  // ===== FIM DA ALTERAÇÃO =====
   
   const ColorPreviewSelector = ({ onPress, color }) => (
     <TouchableOpacity 
@@ -247,17 +232,19 @@ export default function TelaMaterias() {
               <Shuffle color={theme.foreground} size={20} />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.headerButton, { backgroundColor: theme.primary }]} // Botão de Adicionar
-              onPress={openCreateDialog}
-            >
-              <Plus color={theme.primaryForeground} size={20} />
-            </TouchableOpacity>
+            {/* Condição: Mostra o botão "+" do header APENAS se houver matérias */}
+            {!isPageLoading && subjects.length > 0 && (
+              <TouchableOpacity
+                style={[styles.headerButton, { backgroundColor: theme.primary }]} // Botão de Adicionar
+                onPress={openCreateDialog}
+              >
+                <Plus color={theme.primaryForeground} size={20} />
+              </TouchableOpacity>
+            )}
+
           </View>
 
         </View>
-
-        {/* O resto do arquivo (Dialog, map, styles) permanece igual */}
         
         <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
           <ScrollView keyboardShouldPersistTaps="handled">
@@ -318,10 +305,10 @@ export default function TelaMaterias() {
               )}
 
               <View style={styles.dialogActions}>
-                <Botao variant="destructive" onPress={handleCloseDialog}>
+                <Botao variant="destructive-outline" onPress={handleCloseDialog} style={styles.dialogButton}>
                   Cancelar
                 </Botao>
-                <Botao onPress={handleSubmit} disabled={isLoading}>
+                <Botao onPress={handleSubmit} disabled={isLoading} style={styles.dialogButton}>
                   {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingSubject ? 'Salvar' : 'Criar')}
                 </Botao>
               </View>
@@ -447,6 +434,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
     marginTop: 20,
+  },
+  dialogButton: {
+    flex: 1, // Torna os botões proporcionais (50%/50%)
   },
   
   colorPickerContainer: {

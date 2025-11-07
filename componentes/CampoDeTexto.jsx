@@ -2,9 +2,18 @@
 import { StyleSheet, TextInput, useColorScheme } from 'react-native';
 import { cores } from '../tema/cores';
 
-export function CampoDeTexto({ style, placeholder, value, onChangeText, secureTextEntry }) {
+// Permite que o Textarea funcione com o alinhamento correto
+export function CampoDeTexto({ 
+  style, 
+  placeholder, 
+  value, 
+  onChangeText, 
+  secureTextEntry, 
+  multiline = false,
+  ...props 
+}) {
   const scheme = useColorScheme();
-  const theme = scheme === 'dark' ? cores.dark : cores.light;
+  const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
   return (
     <TextInput
@@ -13,8 +22,10 @@ export function CampoDeTexto({ style, placeholder, value, onChangeText, secureTe
         {
           borderColor: theme.border,
           color: theme.foreground,
-          backgroundColor: theme.card, // <-- 1. ADICIONADO AQUI
+          backgroundColor: theme.card,
         },
+        // Aplica altura 44 apenas se NÃO for multiline
+        !multiline && { height: 44 },
         style,
       ]}
       placeholder={placeholder}
@@ -22,18 +33,18 @@ export function CampoDeTexto({ style, placeholder, value, onChangeText, secureTe
       value={value}
       onChangeText={onChangeText}
       secureTextEntry={secureTextEntry}
+      multiline={multiline} 
+      {...props} 
     />
   );
 }
 
 const styles = StyleSheet.create({
   input: {
-    height: 44,
     width: '100%',
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 12,
     fontSize: 14,
-    // backgroundColor: '#FFFFFF', // <-- 2. REMOVIDO DAQUI
   },
 });
