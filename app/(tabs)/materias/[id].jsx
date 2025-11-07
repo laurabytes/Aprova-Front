@@ -176,7 +176,9 @@ export default function TelaFlashcards() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()}>
+          {/* ===== INÍCIO DA CORREÇÃO ===== */}
+          <TouchableOpacity onPress={() => router.replace('/(tabs)/materias')}>
+          {/* ===== FIM DA CORREÇÃO ===== */}
             <ArrowLeft color={theme.foreground} size={24} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>

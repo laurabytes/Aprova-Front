@@ -1,6 +1,6 @@
 // app/(tabs)/materias/index.jsx
 import { Link, useRouter } from 'expo-router';
-import { BookOpen, Edit, Plus, Trash2 } from 'lucide-react-native';
+import { BookOpen, Edit, Plus, Shuffle, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -28,6 +28,21 @@ import { Dialog } from '../../../componentes/Dialog';
 import { Textarea } from '../../../componentes/Textarea';
 import { useAuth } from '../../../contexto/AuthContexto';
 import { cores } from '../../../tema/cores';
+
+// MOCK_DATA (Flashcards)
+const MOCK_DATA = {
+    1: { 
+        flashcards: [
+            { id: 101, pergunta: 'O que é 2+2?', resposta: '4', materiaId: 1 },
+            { id: 102, pergunta: 'O que é a fórmula de Bhaskara?', resposta: 'x = [-b ± sqrt(b² - 4ac)] / 2a', materiaId: 1 },
+        ]
+    },
+    2: {
+        flashcards: [
+            { id: 103, pergunta: 'Quem descobriu o Brasil?', resposta: 'Pedro Álvares Cabral', materiaId: 2 },
+        ]
+    }
+};
 
 // (Função getTextColorForBackground... sem alteração)
 function getTextColorForBackground(hexColor) {
@@ -61,7 +76,11 @@ export default function TelaMaterias() {
 
   useEffect(() => {
     setIsPageLoading(true);
-    setSubjects([]);
+    // Simulação: Carrega as matérias (que têm as cores)
+    setSubjects([
+      { id: 1, nome: 'Matemática', descricao: 'Cálculos e fórmulas', cor: '#3b82f6', usuarioId: user?.id },
+      { id: 2, nome: 'História', descricao: 'História do Brasil', cor: '#ef4444', usuarioId: user?.id },
+    ]);
     setIsPageLoading(false);
   }, [user]);
 
@@ -73,12 +92,9 @@ export default function TelaMaterias() {
   }
 
   const handleSubmit = async () => {
-    // ==============================================================
-    // ALTERAÇÃO 2: Adicionada Validação
-    // ==============================================================
     if (formData.nome.trim() === '') {
       Alert.alert('Campo Obrigatório', 'Por favor, preencha o nome da matéria.');
-      return; // Impede o envio
+      return;
     }
     
     setIsLoading(true);
@@ -96,7 +112,7 @@ export default function TelaMaterias() {
       } else {
         const newSubject = {
           ...formData,
-          id: Math.random(),
+          id: Math.random(), 
           usuarioId: user?.id,
           cor: formData.cor,
         };
@@ -136,22 +152,67 @@ export default function TelaMaterias() {
     setShowColorPicker(false);
     setIsDialogOpen(true);
   };
+
+  // ===== INÍCIO DA ALTERAÇÃO =====
+  // Função para iniciar a sessão mista
+  const handleStartMixedSession = () => {
+    
+    // 1. Criar um mapa de ID da Matéria para Cor
+    const subjectColorMap = new Map();
+    subjects.forEach(subject => {
+      subjectColorMap.set(subject.id, subject.cor);
+    });
+
+    let allFlashcards = [];
+
+    // 2. Itera sobre o MOCK_DATA (que tem os flashcards)
+    Object.keys(MOCK_DATA).forEach(materiaId => {
+      // Verifica se a matéria (com a cor) ainda existe no estado 'subjects'
+      const materiaColor = subjectColorMap.get(Number(materiaId));
+      
+      if (materiaColor) {
+        const materiaFlashcards = MOCK_DATA[materiaId].flashcards;
+        // 3. Adiciona a cor a cada flashcard
+        const flashcardsWithColor = materiaFlashcards.map(fc => ({
+          ...fc,
+          cor: materiaColor, // Adiciona a cor da matéria
+        }));
+        allFlashcards = allFlashcards.concat(flashcardsWithColor);
+      }
+    });
+
+    if (allFlashcards.length === 0) {
+      Alert.alert('Sessão Mista', 'Nenhum flashcard encontrado nas suas matérias cadastradas.');
+      return;
+    }
+
+    // 4. Embaralha o deck
+    for (let i = allFlashcards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allFlashcards[i], allFlashcards[j]] = [allFlashcards[j], allFlashcards[i]];
+    }
+
+    // 5. Navega para a tela de revisão, passando os dados como JSON
+    router.push({
+      pathname: '/(tabs)/materias/revisao',
+      params: {
+        deck: JSON.stringify(allFlashcards), // Serializa o deck
+      },
+    });
+  };
+  // ===== FIM DA ALTERAÇÃO =====
   
-  // ==============================================================
-  // ALTERAÇÃO 1: Estilos do botão de cor agora usam o 'theme'
-  // ==============================================================
   const ColorPreviewSelector = ({ onPress, color }) => (
     <TouchableOpacity 
-      // Os estilos agora são inline para acessar o 'theme'
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
         borderWidth: 1,
-        borderColor: theme.border, // <- Corrigido
+        borderColor: theme.border,
         borderRadius: 8,
         padding: 8,
-        backgroundColor: theme.card, // <- Corrigido
+        backgroundColor: theme.card,
         height: 44,
       }} 
       onPress={onPress}
@@ -170,23 +231,34 @@ export default function TelaMaterias() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* (Header... sem alteração) */}
         <View style={styles.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={[styles.title, { color: theme.foreground }]}>Matérias</Text>
             <Text style={[styles.subtitle, { color: theme.mutedForeground }]}>
               Organize suas matérias e flashcards
             </Text>
           </View>
-          <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: theme.primary }]}
-            onPress={openCreateDialog}
-          >
-            <Plus color={theme.primaryForeground} size={20} />
-          </TouchableOpacity>
+          
+          <View style={styles.headerButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.headerButton, { backgroundColor: theme.muted }]} // Botão de Sessão Mista
+              onPress={handleStartMixedSession}
+            >
+              <Shuffle color={theme.foreground} size={20} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.headerButton, { backgroundColor: theme.primary }]} // Botão de Adicionar
+              onPress={openCreateDialog}
+            >
+              <Plus color={theme.primaryForeground} size={20} />
+            </TouchableOpacity>
+          </View>
+
         </View>
 
-        {/* (Dialog e Formulário... sem alteração no layout) */}
+        {/* O resto do arquivo (Dialog, map, styles) permanece igual */}
+        
         <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
@@ -259,7 +331,6 @@ export default function TelaMaterias() {
 
         {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
 
-        {/* (Estado Vazio... sem alteração) */}
         {!isPageLoading && subjects.length === 0 ? (
           <Card>
             <CardContent style={styles.emptyState}>
@@ -278,7 +349,6 @@ export default function TelaMaterias() {
           </Card>
         ) : (
           <View style={styles.grid}>
-
             {subjects.map((subject) => {
               const textColor = getTextColorForBackground(subject.cor);
               return (
@@ -286,13 +356,10 @@ export default function TelaMaterias() {
                   key={subject.id}
                   href={{
                     pathname: `/(tabs)/materias/${subject.id}`,
-                    // ==============================================================
-                    // ALTERAÇÃO 3: Passando a descrição como parâmetro
-                    // ==============================================================
                     params: {
                       cor: subject.cor.replace('#', ''),
                       nome: subject.nome,
-                      descricao: subject.descricao || '' // Passa a descrição
+                      descricao: subject.descricao || '' 
                     }
                   }}
                   asChild
@@ -317,18 +384,9 @@ export default function TelaMaterias() {
                             e.stopPropagation();
                             handleDelete(subject.id);
                           }}>
-                            <Trash2 color={theme.destructive} size={18} />
+                            <Trash2 color={textColor} size={18} />
                           </TouchableOpacity>
                         </View>
-
-                        {/* ==============================================================
-                        // ALTERAÇÃO 3: Descrição removida daqui
-                        // ============================================================== */}
-                        {/* {subject.descricao && (
-                          <CardDescription style={{ color: textColor, opacity: 0.8, marginTop: 8 }}>
-                            {subject.descricao}
-                          </CardDescription>
-                        )} */}
                       </CardHeader>
                     </Card>
                   </Pressable>
@@ -342,22 +400,27 @@ export default function TelaMaterias() {
   );
 }
 
-// ==============================================================
-// ALTERAÇÃO 1: Removidos estilos que foram movidos para inline
-// ==============================================================
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 20, gap: 24, paddingBottom: 60 },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'center', 
+  },
+  headerButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12, 
   },
   title: { fontSize: 28, fontWeight: '700' },
   subtitle: { fontSize: 16, marginTop: 4 },
-  addButton: {
+  headerButton: {
     padding: 10,
-    borderRadius: 20,
+    borderRadius: 20, 
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   grid: { gap: 16 },
   card: { width: '100%' },
@@ -393,16 +456,10 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   
-  // Estilos do preview (não dependem do tema, exceto a cor de fundo)
   colorPreview: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 1,
-    // A cor da borda será aplicada inline
   },
-  
-  // Estilos removidos daqui e movidos para inline:
-  // - colorPreviewTouchable
-  // - colorValueText
 });

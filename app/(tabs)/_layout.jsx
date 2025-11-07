@@ -62,20 +62,30 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="materias/[id]"
         options={{
-          href: null,
+          href: null, // Escondido da barra
           headerShown: false,
           title: 'Flashcards',
         }}
       />
 
-      {}
+      {/* ===== ESTA É A CORREÇÃO ===== */}
+      {/* A tela 'revisao' também deve ser listada aqui e escondida com href: null */}
+      <Tabs.Screen
+        name="materias/revisao" 
+        options={{
+          href: null, // Esconde da barra de abas
+          headerShown: false,
+          title: 'Revisão Mista',
+        }}
+      />
+      {/* ===== FIM DA CORREÇÃO ===== */}
+
       <Tabs.Screen
         name="perfil"
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color }) => <UserCircle size={24} color={color} />,
           headerShown: false,
-          // href: null, // Deixei isto comentado caso queira que o perfil apareça na aba
         }}
       />
     </Tabs>

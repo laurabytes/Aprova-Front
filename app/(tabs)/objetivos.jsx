@@ -1,11 +1,10 @@
-// app/(tabs)/objetivos.jsx
-
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { CheckCircle2, Circle, Edit, Plus, Target, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -52,6 +51,7 @@ export default function TelaMetas() {
     dataInicio: '',
     dataFim: '',
     status: 'EM_ANDAMENTO',
+    progresso: '0', 
   });
 
   useEffect(() => {
@@ -100,20 +100,54 @@ export default function TelaMetas() {
   // --- FIM DA LÓGICA DO CALENDÁRIO ---
 
   const handleSubmit = async () => {
+    
+    // ===== INÍCIO DA VALIDAÇÃO DE DATA =====
+    // Verifica se a data final foi preenchida e se é anterior à data inicial
+    if (formData.dataFim && formData.dataInicio) {
+      // Adicionamos T00:00:00 para garantir que a comparação seja feita no início do dia,
+      // ignorando fuso horário ou horas.
+      const dataInicio = new Date(formData.dataInicio + 'T00:00:00');
+      const dataFim = new Date(formData.dataFim + 'T00:00:00');
+
+      if (dataFim < dataInicio) {
+        Alert.alert('Data Inválida', 'A data de fim não pode ser anterior à data de início.');
+        return; // Para a execução da função
+      }
+    }
+    // ===== FIM DA VALIDAÇÃO DE DATA =====
+
     setIsLoading(true);
     await new Promise(res => setTimeout(res, 300)); 
     try {
+      let progressoNumerico = parseInt(formData.progresso, 10) || 0;
+      let progressoValido = Math.max(0, Math.min(100, progressoNumerico)); 
+      let statusFinal = formData.status;
+
+      if (formData.status === 'CONCLUIDO') {
+        progressoValido = 100;
+      } else if (progressoValido === 100) {
+        statusFinal = 'CONCLUIDO';
+      } else {
+        statusFinal = 'EM_ANDAMENTO';
+      }
+      
+      const dadosSalvos = {
+        ...formData,
+        progresso: progressoValido, 
+        status: statusFinal,
+      };
+
       if (editingGoal) {
         setGoals(prev =>
           prev.map(g =>
             g.id === editingGoal.id
-              ? { ...g, ...formData }
+              ? { ...g, ...dadosSalvos }
               : g,
           ),
         );
       } else {
         const newGoal = {
-          ...formData,
+          ...dadosSalvos, 
           id: Math.random(),
           usuarioId: user?.id,
         };
@@ -144,8 +178,11 @@ export default function TelaMetas() {
   const toggleStatus = async (goal) => {
     const newStatus =
       goal.status === 'CONCLUIDO' ? 'EM_ANDAMENTO' : 'CONCLUIDO';
+      
+    const newProgress = newStatus === 'CONCLUIDO' ? 100 : 0;
+    
     setGoals(prev =>
-      prev.map(g => (g.id === goal.id ? { ...g, status: newStatus } : g)),
+      prev.map(g => (g.id === goal.id ? { ...g, status: newStatus, progresso: newProgress } : g)),
     );
   };
 
@@ -154,9 +191,10 @@ export default function TelaMetas() {
     setFormData({
       titulo: goal.titulo,
       descricao: goal.descricao,
-      dataInicio: goal.dataInicio.split('T')[0],
-      dataFim: goal.dataFim.split('T')[0],
+      dataInicio: goal.dataInicio ? goal.dataInicio.split('T')[0] : '',
+      dataFim: goal.dataFim ? goal.dataFim.split('T')[0] : '',
       status: goal.status,
+      progresso: String(goal.progresso || 0), 
     });
     setIsDialogOpen(true);
   };
@@ -169,6 +207,7 @@ export default function TelaMetas() {
       dataInicio: new Date().toISOString().split('T')[0],
       dataFim: '',
       status: 'EM_ANDAMENTO',
+      progresso: '0', 
     });
     setIsDialogOpen(true);
   };
@@ -186,17 +225,7 @@ export default function TelaMetas() {
     }
   };
 
-  const calculateProgress = (goal) => {
-    if (goal.status === 'CONCLUIDO') return 100;
-    const start = new Date(goal.dataInicio).getTime();
-    const end = new Date(goal.dataFim).getTime();
-    const now = Date.now();
-    if (now < start || start === end) return 0;
-    if (now > end) return 100;
-    return Math.round(((now - start) / (end - start)) * 100);
-  };
-
-  const activeGoals = goals.filter((g) => g.status === 'EM_ANDAMENTO');
+  const activeGoals = goals.filter((g) => g.status !== 'CONCLUIDO');
   const completedGoals = goals.filter((g) => g.status === 'CONCLUIDO');
 
   return (
@@ -213,7 +242,10 @@ export default function TelaMetas() {
         </View>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <View>
+          <ScrollView 
+            keyboardShouldPersistTaps="handled" 
+            contentContainerStyle={{ paddingBottom: 40 }}
+          >
             {showDatePickerFor ? (
               // --- VISTA DO CALENDÁRIO ---
               <View>
@@ -258,7 +290,7 @@ export default function TelaMetas() {
                   <Textarea
                     value={formData.descricao}
                     onChangeText={(t) => setFormData({ ...formData, descricao: t })}
-                    placeholder="Descreva sua meta"
+                    placeholder="Descreva sua meta (opcional)"
                   />
                   
                   <Text style={[styles.label, { color: theme.foreground }]}>Data Início</Text>
@@ -271,7 +303,7 @@ export default function TelaMetas() {
                     </Text>
                   </TouchableOpacity>
 
-                  <Text style={[styles.label, { color: theme.foreground }]}>Data Fim</Text>
+                  <Text style={[styles.label, { color: theme.foreground }]}>Data Fim (Opcional)</Text>
                   <TouchableOpacity 
                     style={[styles.fakeInput, { borderColor: theme.border, backgroundColor: theme.card }]}
                     onPress={() => openDatePicker('dataFim')}
@@ -281,6 +313,21 @@ export default function TelaMetas() {
                     </Text>
                   </TouchableOpacity>
 
+                  <Text style={[styles.label, { color: theme.foreground }]}>Progresso (%)</Text>
+                  <Select
+                    value={formData.progresso}
+                    onValueChange={(p) => setFormData({ ...formData, progresso: p })}
+                    prompt="Selecione o progresso"
+                  >
+                    <SelectItem label="0%" value="0" />
+                    <SelectItem label="10%" value="10" />
+                    <SelectItem label="25%" value="25" />
+                    <SelectItem label="50%" value="50" />
+                    <SelectItem label="75%" value="75" />
+                    <SelectItem label="90%" value="90" />
+                    <SelectItem label="100%" value="100" />
+                  </Select>
+
                   <Text style={[styles.label, { color: theme.foreground }]}>Status</Text>
                   <Select
                     value={formData.status}
@@ -289,8 +336,8 @@ export default function TelaMetas() {
                   >
                     <SelectItem label="Em Andamento" value="EM_ANDAMENTO" />
                     <SelectItem label="Concluído" value="CONCLUIDO" />
-                    <SelectItem label="Cancelado" value="CANCELADO" />
                   </Select>
+                  
                   <View style={styles.dialogActions}>
                     <Botao variant="destructive" onPress={() => setIsDialogOpen(false)}>
                       Cancelar
@@ -302,7 +349,7 @@ export default function TelaMetas() {
                 </View>
               </View>
             )}
-          </View>
+          </ScrollView>
         </Dialog>
         
         {showDatePickerFor && Platform.OS === 'android' && (
@@ -318,7 +365,6 @@ export default function TelaMetas() {
         {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
 
         {!isPageLoading && goals.length === 0 ? (
-          // --- INÍCIO DA ALTERAÇÃO DO ESTADO VAZIO ---
           <Card>
             <CardContent style={styles.emptyState}>
               <Target color={theme.mutedForeground} size={48} />
@@ -326,7 +372,6 @@ export default function TelaMetas() {
                 Nenhuma meta cadastrada
               </Text>
               
-              {/* O <Botao> antigo foi substituído por este <TouchableOpacity> */}
               <TouchableOpacity 
                 style={[styles.emptyAddButton, { backgroundColor: theme.primary }]} 
                 onPress={openCreateDialog}
@@ -336,7 +381,6 @@ export default function TelaMetas() {
 
             </CardContent>
           </Card>
-          // --- FIM DA ALTERAÇÃO DO ESTADO VAZIO ---
         ) : (
           <View style={styles.grid}>
             {activeGoals.length > 0 && (
@@ -350,7 +394,7 @@ export default function TelaMetas() {
                           {goal.titulo}
                         </CardTitle>
                         <TouchableOpacity onPress={() => toggleStatus(goal)}>
-                          <CheckCircle2 color={theme.mutedForeground} size={18} />
+                          <Circle color={theme.mutedForeground} size={18} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => openEditDialog(goal)}>
                           <Edit color={theme.mutedForeground} size={18} />
@@ -366,14 +410,14 @@ export default function TelaMetas() {
                         <View style={styles.progressHeader}>
                           <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>Progresso</Text>
                           <Text style={{ color: theme.foreground, fontWeight: '500' }}>
-                            {calculateProgress(goal)}%
+                            {goal.progresso || 0}%
                           </Text>
                         </View>
-                        <Progress value={calculateProgress(goal)} />
+                        <Progress value={goal.progresso} />
                       </View>
                       <View style={styles.cardFooter}>
                         <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
-                          {goal.dataInicio} - {goal.dataFim}
+                          {goal.dataInicio} {goal.dataFim ? `- ${goal.dataFim}` : ''}
                         </Text>
                         {getStatusBadge(goal.status)}
                       </View>
@@ -387,22 +431,37 @@ export default function TelaMetas() {
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Concluídos</Text>
                 {completedGoals.map((goal) => (
-                  <Card key={goal.id} style={[styles.card, { opacity: 0.7 }]}>
+                  <Card key={goal.id} style={styles.card}>
                     <CardHeader>
                       <View style={styles.cardTitleRow}>
                         <CardTitle style={{ flex: 1, color: theme.foreground }}>
                           {goal.titulo}
                         </CardTitle>
                         <TouchableOpacity onPress={() => toggleStatus(goal)}>
-                          <Circle color={theme.mutedForeground} size={18} />
+                          <CheckCircle2 color={theme.primary} size={18} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => handleDelete(goal.id)}>
                           <Trash2 color={theme.destructive} size={18} />
                         </TouchableOpacity>
                       </View>
+                      {goal.descricao && <CardDescription>{goal.descricao}</CardDescription>}
                     </CardHeader>
-                    <CardContent>
-                      {getStatusBadge(goal.status)}
+                    <CardContent style={{ gap: 16 }}>
+                      <View>
+                        <View style={styles.progressHeader}>
+                          <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>Progresso</Text>
+                          <Text style={{ color: theme.foreground, fontWeight: '500' }}>
+                            {goal.progresso || 0}%
+                          </Text>
+                        </View>
+                        <Progress value={goal.progresso} />
+                      </View>
+                      <View style={styles.cardFooter}>
+                        <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
+                          {goal.dataInicio} {goal.dataFim ? `- ${goal.dataFim}` : ''}
+                        </Text>
+                        {getStatusBadge(goal.status)}
+                      </View>
                     </CardContent>
                   </Card>
                 ))}
@@ -411,13 +470,23 @@ export default function TelaMetas() {
           </View>
         )}
       </ScrollView>
+
+      {!isPageLoading && goals.length > 0 && (
+        <TouchableOpacity 
+          style={[styles.emptyAddButton, styles.floatingButton, { backgroundColor: theme.primary }]} 
+          onPress={openCreateDialog}
+        >
+          <Plus size={28} color={theme.primaryForeground} />
+        </TouchableOpacity>
+      )}
+
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 20, gap: 24, paddingBottom: 60 },
+  scrollContent: { padding: 20, gap: 24, paddingBottom: 100 }, 
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 28, fontWeight: '700' },
   subtitle: { fontSize: 16, marginTop: 4 },
@@ -444,20 +513,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
   },
 
-  // --- NOVO ESTILO ADICIONADO PARA O BOTÃO CIRCULAR ---
   emptyAddButton: {
     width: 60,
     height: 60,
-    borderRadius: 30, // Metade da largura/altura para ser um círculo
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8, // Espaçamento
-    // Sombra sutil para combinar com os cards
+    marginTop: 8, 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
   },
-  
+  floatingButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    elevation: 8, 
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  }
 });
