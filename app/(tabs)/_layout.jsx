@@ -63,7 +63,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="materias/[id]"
         options={{
-          href: null, // Escondido da barra
+          href: null, 
           headerShown: false,
           title: 'Flashcards',
         }}

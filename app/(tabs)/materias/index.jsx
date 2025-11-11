@@ -309,7 +309,7 @@ export default function TelaMaterias() {
               )}
 
               <View style={styles.dialogActions}>
-                <Botao variant="destructive" onPress={handleCloseDialog}>
+                <Botao variant="destructive-outline" onPress={handleCloseDialog}>
                   Cancelar
                 </Botao>
                 <Botao onPress={handleSubmit} disabled={isLoading}>
@@ -330,7 +330,7 @@ export default function TelaMaterias() {
                 Nenhuma matéria cadastrada
               </Text>
               <Text style={[styles.emptyText, { color: theme.mutedForeground }]}>
-                Use o botão **+** para criar sua primeira matéria.
+                Toque o botão abaixo para adicionar sua primeira matéria e começar a criar flashcards!
               </Text>
           </View>
         ) : (
@@ -457,22 +457,21 @@ const styles = StyleSheet.create({
   // =======================================================
   fabButton: {
     position: 'absolute',
-    bottom: 30, // Distância da borda inferior
-    right: 20, // Distância da borda direita
+    bottom: 30, 
+    right: 20, 
     width: 60,
     height: 60,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    // Sombra para dar o efeito de flutuação
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
-    elevation: 8, // Sombra Android
-    zIndex: 10, // Garantir que flutue sobre o conteúdo
+    elevation: 8, 
+    zIndex: 10, 
   },
-  // =======================================================
+ 
 
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
   dialogDescription: { fontSize: 14, color: '#737373', marginBottom: 16 },
@@ -482,7 +481,7 @@ const styles = StyleSheet.create({
 
   dialogActions: {
     flexDirection: 'row', 
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     gap: 8, 
     marginTop: 20,
   },

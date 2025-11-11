@@ -58,7 +58,7 @@ export default function TelaFlashcards() {
   const { id: subjectId, cor: corParam, nome: nomeParam, descricao: descricaoParam } = params;
   
   const scheme = useColorScheme();
-  const theme = scheme === 'dark' ? cores.dark : cores.light;
+  const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
   const [subject, setSubject] = useState(null);
   const [flashcards, setFlashcards] = useState([]);
@@ -219,7 +219,7 @@ export default function TelaFlashcards() {
                 placeholder="Digite a resposta"
               />
               <View style={styles.dialogActions}>
-                <Botao variant="destructive" onPress={() => setIsDialogOpen(false)}>
+                <Botao variant="destructive-outline" onPress={() => setIsDialogOpen(false)}>
                   Cancelar
                 </Botao>
                 <Botao onPress={handleSubmit} disabled={isLoading}>

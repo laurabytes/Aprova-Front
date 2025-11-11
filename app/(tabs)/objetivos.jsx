@@ -16,9 +16,8 @@ import {
   View
 } from 'react-native';
 
-// ===== INÍCIO DA IMPORTAÇÃO =====
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
-// ===== FIM DA IMPORTAÇÃO =====
+
 
 import { Badge } from '../../componentes/Badge';
 import { Botao } from '../../componentes/Botao';
@@ -61,11 +60,11 @@ export default function TelaMetas() {
 
   useEffect(() => {
     setIsPageLoading(true);
-    setGoals([]); // Começa vazio
+    setGoals([]); 
     setIsPageLoading(false);
   }, [user]);
   
-  // --- LÓGICA DO CALENDÁRIO (sem alteração) ---
+  // --- LÓGICA DO CALENDÁRIO  ---
   const getDateValue = (dateString) => {
     if (dateString) {
       const date = new Date(dateString + 'T00:00:00'); 
@@ -102,11 +101,11 @@ export default function TelaMetas() {
   const cancelDate = () => {
     setShowDatePickerFor(null);
   };
-  // --- FIM DA LÓGICA DO CALENDÁRIO ---
+  // --- FIM ---
 
   const handleSubmit = async () => {
     
-    // ===== VALIDAÇÃO DE DATA (sem alteração) =====
+    // ===== VALIDAÇÃO  =====
     if (formData.dataFim && formData.dataInicio) {
       const dataInicio = new Date(formData.dataInicio + 'T00:00:00');
       const dataFim = new Date(formData.dataFim + 'T00:00:00');
@@ -116,7 +115,7 @@ export default function TelaMetas() {
         return; 
       }
     }
-    // ===== FIM DA VALIDAÇÃO DE DATA =====
+    // ===== FIM  =====
 
     setIsLoading(true);
     await new Promise(res => setTimeout(res, 300)); 
@@ -277,7 +276,7 @@ export default function TelaMetas() {
               </View>
 
             ) : (
-              // --- VISTA DO FORMULÁRIO ---
+             
               <View>
                 <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
                   {editingGoal ? 'Editar Meta' : 'Nova Meta'}
@@ -516,27 +515,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
   },
 
-  // ===== ESTILO: Floating Action Button (FAB) =====
+  // ===== ESTILO:(FAB) =====
   fabButton: {
     position: 'absolute',
-    bottom: 30, // Distância da borda inferior
-    right: 20, // Distância da borda direita
+    bottom: 30, 
+    right: 20, 
     width: 60,
     height: 60,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    // Sombra para dar o efeito de flutuação
+   
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
-    elevation: 8, // Sombra Android
-    zIndex: 10, // Garantir que flutue sobre o conteúdo
+    elevation: 8, 
+    zIndex: 10, 
   },
-  // ===============================================
 
-  // Estilos do Estado Vazio - Agora sem o botão de texto
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
@@ -559,7 +556,7 @@ const styles = StyleSheet.create({
     fontSize: 16, 
     marginBottom: 16, 
   },
-  // O estilo emptyButton original foi removido/ignorad
+  
   
   segmentedControl: {
     height: 44, 

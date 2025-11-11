@@ -34,7 +34,7 @@ const MOCK_DASHBOARD_DATA = {
   1: {
     materias: 2,
     flashcards: 3,
-    objetivos: 1, // O nome da chave interna (objetivos) pode manter
+    objetivos: 1, 
     pomodoro: 5,
     performance: [
       { dia: 'Seg', valor: 20 },
@@ -46,9 +46,7 @@ const MOCK_DASHBOARD_DATA = {
     ],
   },
 };
-// ----------------------------------------------------
 
-// Componente de Card de Estatística
 function StatCard({ title, value, description, icon: Icon }) {
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
