@@ -31,20 +31,19 @@ import { cores } from '../../../tema/cores';
 
 // MOCK_DATA (Flashcards) - Mantido para a lógica de Sessão Mista
 const MOCK_DATA = {
-    1: { 
-        flashcards: [
-            { id: 101, pergunta: 'O que é 2+2?', resposta: '4', materiaId: 1 },
-            { id: 102, pergunta: 'O que é a fórmula de Bhaskara?', resposta: 'x = [-b ± sqrt(b² - 4ac)] / 2a', materiaId: 1 },
-        ]
-    },
-    2: {
-        flashcards: [
-            { id: 103, pergunta: 'Quem descobriu o Brasil?', resposta: 'Pedro Álvares Cabral', materiaId: 2 },
-        ]
-    }
+  1: {
+    flashcards: [
+      { id: 101, pergunta: 'O que é 2+2?', resposta: '4', materiaId: 1 },
+      { id: 102, pergunta: 'O que é a fórmula de Bhaskara?', resposta: 'x = [-b ± sqrt(b² - 4ac)] / 2a', materiaId: 1 },
+    ]
+  },
+  2: {
+    flashcards: [
+      { id: 103, pergunta: 'Quem descobriu o Brasil?', resposta: 'Pedro Álvares Cabral', materiaId: 2 },
+    ]
+  }
 };
 
-// (Função getTextColorForBackground... sem alteração)
 function getTextColorForBackground(hexColor) {
   try {
     const hex = hexColor.replace('#', '');
@@ -76,8 +75,7 @@ export default function TelaMaterias() {
 
   useEffect(() => {
     setIsPageLoading(true);
-    // Inicializa com uma lista vazia
-    setSubjects([]); 
+    setSubjects([]);
     setIsPageLoading(false);
   }, [user]);
 
@@ -86,14 +84,14 @@ export default function TelaMaterias() {
     setShowColorPicker(false);
     setEditingSubject(null);
     setFormData({ nome: '', descricao: '', cor: theme.primary });
-  }
+  };
 
   const handleSubmit = async () => {
     if (formData.nome.trim() === '') {
       Alert.alert('Campo Obrigatório', 'Por favor, preencha o nome da matéria.');
       return;
     }
-    
+
     setIsLoading(true);
     await new Promise(res => setTimeout(res, 300));
 
@@ -109,7 +107,7 @@ export default function TelaMaterias() {
       } else {
         const newSubject = {
           ...formData,
-          id: Math.random(), 
+          id: Math.random(),
           usuarioId: user?.id,
           cor: formData.cor,
         };
@@ -122,7 +120,7 @@ export default function TelaMaterias() {
       setIsLoading(false);
     }
   };
-  
+
   const handleDelete = async (id) => {
     Alert.alert('Excluir Matéria', 'Tem certeza que deseja excluir?', [
       { text: 'Cancelar', style: 'cancel' },
@@ -135,14 +133,14 @@ export default function TelaMaterias() {
       },
     ]);
   };
-  
+
   const openEditDialog = (subject) => {
     setEditingSubject(subject);
     setFormData({ nome: subject.nome, descricao: subject.descricao, cor: subject.cor });
     setShowColorPicker(false);
     setIsDialogOpen(true);
   };
-  
+
   const openCreateDialog = () => {
     setEditingSubject(null);
     setFormData({ nome: '', descricao: '', cor: theme.primary });
@@ -150,28 +148,20 @@ export default function TelaMaterias() {
     setIsDialogOpen(true);
   };
 
-  // Função para iniciar a sessão mista
   const handleStartMixedSession = () => {
-    
-    // 1. Criar um mapa de ID da Matéria para Cor
     const subjectColorMap = new Map();
     subjects.forEach(subject => {
       subjectColorMap.set(subject.id, subject.cor);
     });
 
     let allFlashcards = [];
-
-    // 2. Itera sobre o MOCK_DATA (que tem os flashcards)
     Object.keys(MOCK_DATA).forEach(materiaId => {
-      // Verifica se a matéria (com a cor) ainda existe no estado 'subjects'
       const materiaColor = subjectColorMap.get(Number(materiaId));
-      
       if (materiaColor) {
         const materiaFlashcards = MOCK_DATA[materiaId].flashcards;
-        // 3. Adiciona a cor a cada flashcard
         const flashcardsWithColor = materiaFlashcards.map(fc => ({
           ...fc,
-          cor: materiaColor, // Adiciona a cor da matéria
+          cor: materiaColor,
         }));
         allFlashcards = allFlashcards.concat(flashcardsWithColor);
       }
@@ -182,23 +172,21 @@ export default function TelaMaterias() {
       return;
     }
 
-    // 4. Embaralha o deck
     for (let i = allFlashcards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [allFlashcards[i], allFlashcards[j]] = [allFlashcards[j], allFlashcards[i]];
     }
 
-    // 5. Navega para a tela de revisão, passando os dados como JSON
     router.push({
       pathname: '/(tabs)/materias/revisao',
       params: {
-        deck: JSON.stringify(allFlashcards), // Serializa o deck
+        deck: JSON.stringify(allFlashcards),
       },
     });
   };
-  
+
   const ColorPreviewSelector = ({ onPress, color }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -209,11 +197,11 @@ export default function TelaMaterias() {
         padding: 8,
         backgroundColor: theme.card,
         height: 44,
-      }} 
+      }}
       onPress={onPress}
     >
       <View style={[styles.colorPreview, { backgroundColor: color, borderColor: theme.border }]} />
-      <Text style={{ fontSize: 14, color: theme.mutedForeground }}> 
+      <Text style={{ fontSize: 14, color: theme.mutedForeground }}>
         {color?.toUpperCase()}
       </Text>
     </TouchableOpacity>
@@ -221,8 +209,8 @@ export default function TelaMaterias() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView 
-        style={styles.container} 
+      <ScrollView
+        style={styles.container}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
@@ -233,23 +221,19 @@ export default function TelaMaterias() {
               Organize suas matérias e flashcards
             </Text>
           </View>
-          
+
           <View style={styles.headerButtonsContainer}>
-            {/* Mantém apenas o botão de Sessão Mista */}
             {subjects.length > 0 && (
-                <TouchableOpacity
+              <TouchableOpacity
                 style={[styles.headerButton, { backgroundColor: theme.muted }]}
                 onPress={handleStartMixedSession}
-                >
+              >
                 <Shuffle color={theme.foreground} size={20} />
-                </TouchableOpacity>
+              </TouchableOpacity>
             )}
-
-            {/* O BOTÃO DE ADICIONAR FOI REMOVIDO DAQUI */}
           </View>
-
         </View>
-        
+
         <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
@@ -284,7 +268,7 @@ export default function TelaMaterias() {
                   onPress={() => setShowColorPicker(prev => !prev)}
                 />
               </View>
-              
+
               {showColorPicker && (
                 <View style={styles.colorPickerContainer}>
                   <ColorPicker
@@ -297,10 +281,10 @@ export default function TelaMaterias() {
                     noSnap={true}
                     row={false}
                     swatches={false}
-                    style={{ height: 200 }} 
+                    style={{ height: 200 }}
                   />
-                  <Botao 
-                    onPress={() => setShowColorPicker(false)} 
+                  <Botao
+                    onPress={() => setShowColorPicker(false)}
                     style={{ width: '100%', marginTop: 16 }}
                   >
                     Confirmar Cor
@@ -308,30 +292,43 @@ export default function TelaMaterias() {
                 </View>
               )}
 
-              <View style={styles.dialogActions}>
-                <Botao variant="destructive-outline" onPress={handleCloseDialog}>
+              {/* ======== BOTÕES GRANDES (IGUAIS À TELA DE METAS) ======== */}
+              <View style={[styles.dialogActions, { justifyContent: 'space-between' }]}>
+                <Botao
+                  variant="destructive-outline"
+                  onPress={handleCloseDialog}
+                  style={{ flex: 1 }}
+                >
                   Cancelar
                 </Botao>
-                <Botao onPress={handleSubmit} disabled={isLoading}>
-                  {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingSubject ? 'Salvar' : 'Criar')}
+                <Botao
+                  onPress={handleSubmit}
+                  disabled={isLoading}
+                  style={{ flex: 1 }}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color={theme.primaryForeground} />
+                  ) : (
+                    editingSubject ? 'Salvar' : 'Criar'
+                  )}
                 </Botao>
               </View>
+              {/* ========================================================== */}
             </View>
           </ScrollView>
         </Dialog>
 
         {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
 
-        {/* Renderiza o estado vazio se não houver matérias */}
         {!isPageLoading && subjects.length === 0 ? (
-          <View style={styles.emptyContainer}> 
-              <BookOpen color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
-              <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
-                Nenhuma matéria cadastrada
-              </Text>
-              <Text style={[styles.emptyText, { color: theme.mutedForeground }]}>
-                Toque o botão abaixo para adicionar sua primeira matéria e começar a criar flashcards!
-              </Text>
+          <View style={styles.emptyContainer}>
+            <BookOpen color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
+            <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
+              Nenhuma matéria cadastrada
+            </Text>
+            <Text style={[styles.emptyText, { color: theme.mutedForeground }]}>
+              Toque o botão abaixo para adicionar sua primeira matéria e começar a criar flashcards!
+            </Text>
           </View>
         ) : (
           <View style={styles.grid}>
@@ -345,32 +342,37 @@ export default function TelaMaterias() {
                     params: {
                       cor: subject.cor.replace('#', ''),
                       nome: subject.nome,
-                      descricao: subject.descricao || '' 
+                      descricao: subject.descricao || ''
                     }
                   }}
                   asChild
                 >
                   <Pressable>
                     <Card style={[styles.card, { backgroundColor: subject.cor || theme.card }]}>
-                      {/* Manutenção da alteração do padding para retângulos maiores */}
                       <CardHeader style={{ paddingTop: 24, paddingBottom: 24, paddingHorizontal: 16 }}>
                         <View style={styles.cardTitleRow}>
                           <CardTitle style={{ flex: 1, color: textColor, fontSize: 20 }}>
                             {subject.nome}
                           </CardTitle>
 
-                          <TouchableOpacity onPress={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            openEditDialog(subject);
-                          }}>
+                          <TouchableOpacity
+                            style={{ padding: 12 }}
+                            onPress={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openEditDialog(subject);
+                            }}
+                          >
                             <Edit color={textColor} size={18} />
                           </TouchableOpacity>
-                          <TouchableOpacity onPress={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDelete(subject.id);
-                          }}>
+                          <TouchableOpacity
+                            style={{ padding: 12 }}
+                            onPress={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDelete(subject.id);
+                            }}
+                          >
                             <Trash2 color={textColor} size={18} />
                           </TouchableOpacity>
                         </View>
@@ -383,10 +385,9 @@ export default function TelaMaterias() {
           </View>
         )}
       </ScrollView>
-      
-      {/* NOVO: Botão Flutuante (FAB) no canto inferior direito */}
-      <TouchableOpacity 
-        style={[styles.fabButton, { backgroundColor: theme.primary }]} 
+
+      <TouchableOpacity
+        style={[styles.fabButton, { backgroundColor: theme.primary }]}
         onPress={openCreateDialog}
       >
         <Plus size={30} color={theme.primaryForeground} />
@@ -401,17 +402,17 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center', 
+    alignItems: 'center',
   },
   headerButtonsContainer: {
     flexDirection: 'row',
-    gap: 12, 
+    gap: 12,
   },
   title: { fontSize: 28, fontWeight: '700' },
   subtitle: { fontSize: 16, marginTop: 4 },
   headerButton: {
     padding: 10,
-    borderRadius: 20, 
+    borderRadius: 20,
     width: 40,
     height: 40,
     alignItems: 'center',
@@ -423,42 +424,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
-  
-  // =======================================================
-  // ESTILOS DO ESTADO VAZIO (emptyState)
-  // =======================================================
+
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 48,
     gap: 16,
-    minHeight: 400, // Garante que ocupe o espaço disponível
+    minHeight: 400,
   },
-  emptyIcon: {
-    marginBottom: 16, 
-    opacity: 0.8,
-  },
-  emptyTitle: { 
-    fontSize: 22, 
-    fontWeight: '700', 
-  },
-  emptyText: { 
-    textAlign: 'center',
-    fontSize: 16, 
-    marginBottom: 16, 
-  },
-  // =======================================================
-  
-  // =======================================================
-  // ESTILO: Floating Action Button (FAB)
-  // =======================================================
+  emptyIcon: { marginBottom: 16, opacity: 0.8 },
+  emptyTitle: { fontSize: 22, fontWeight: '700' },
+  emptyText: { textAlign: 'center', fontSize: 16, marginBottom: 16 },
+
   fabButton: {
     position: 'absolute',
-    bottom: 30, 
-    right: 20, 
+    bottom: 30,
+    right: 20,
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -468,10 +452,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
-    elevation: 8, 
-    zIndex: 10, 
+    elevation: 8,
+    zIndex: 10,
   },
- 
 
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
   dialogDescription: { fontSize: 14, color: '#737373', marginBottom: 16 },
@@ -479,21 +462,21 @@ const styles = StyleSheet.create({
   inputGroup: { width: '100%', gap: 6 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
 
+  // === BOTÕES GRANDES NO MODAL ===
   dialogActions: {
-    flexDirection: 'row', 
-    justifyContent: 'flex-end',
-    gap: 8, 
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
     marginTop: 20,
   },
-// ...
-  
+
   colorPickerContainer: {
     width: '100%',
     alignItems: 'center',
     marginTop: 8,
     gap: 0,
   },
-  
+
   colorPreview: {
     width: 24,
     height: 24,
