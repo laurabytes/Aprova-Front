@@ -64,7 +64,7 @@ export default function TelaMetas() {
     setIsPageLoading(false);
   }, [user]);
   
-  // --- LÓGICA DO CALENDÁRIO  ---
+  // --- LÓGICA DO CALENDÁRIO  ---
   const getDateValue = (dateString) => {
     if (dateString) {
       const date = new Date(dateString + 'T00:00:00'); 
@@ -105,7 +105,7 @@ export default function TelaMetas() {
 
   const handleSubmit = async () => {
     
-    // ===== VALIDAÇÃO  =====
+    // ===== VALIDAÇÃO  =====
     if (formData.dataFim && formData.dataInicio) {
       const dataInicio = new Date(formData.dataInicio + 'T00:00:00');
       const dataFim = new Date(formData.dataFim + 'T00:00:00');
@@ -115,7 +115,7 @@ export default function TelaMetas() {
         return; 
       }
     }
-    // ===== FIM  =====
+    // ===== FIM  =====
 
     setIsLoading(true);
     await new Promise(res => setTimeout(res, 300)); 
@@ -242,7 +242,7 @@ export default function TelaMetas() {
           </View>
         </View>
 
-        {/* --- MODAL / DIALOG (sem alteração) --- */}
+        {/* --- MODAL / DIALOG --- */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <ScrollView 
             keyboardShouldPersistTaps="handled" 
@@ -265,18 +265,19 @@ export default function TelaMetas() {
 
                 {Platform.OS !== 'android' && (
                   <View style={styles.dialogActions}>
-                    <Botao variant="outline" onPress={cancelDate} style={{ flex: 1 }}>
+                    <Botao variant="destructive-outline" onPress={cancelDate} style={{ flex: 1 }}>
                       Cancelar
                     </Botao>
                     <Botao onPress={confirmDate} style={{ flex: 1 }}>
                       Confirmar
                     </Botao>
+                    
                   </View>
                 )}
               </View>
 
             ) : (
-             
+              
               <View>
                 <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
                   {editingGoal ? 'Editar Meta' : 'Nova Meta'}
@@ -345,14 +346,16 @@ export default function TelaMetas() {
                     activeFontStyle={{ color: theme.primaryForeground, fontWeight: 'bold' }}
                   />
                   
-                  <View style={styles.dialogActions}>
-                    <Botao variant="destructive" onPress={() => setIsDialogOpen(false)}>
+                  {/* ===== PADRONIZAÇÃO DO ESTILO DOS BOTÕES DO MODAL ===== */}
+                  <View style={[styles.dialogActions, { justifyContent: 'space-between' }]}>
+                    <Botao variant="destructive-outline" onPress={() => setIsDialogOpen(false)} style={{ flex: 1 }}>
                       Cancelar
                     </Botao>
-                    <Botao onPress={handleSubmit} disabled={isLoading}>
+                    <Botao onPress={handleSubmit} disabled={isLoading} style={{ flex: 1 }}>
                       {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingGoal ? 'Salvar' : 'Criar')}
                     </Botao>
                   </View>
+                  {/* ===== FIM DA PADRONIZAÇÃO ===== */}
                 </View>
               </View>
             )}
@@ -371,7 +374,7 @@ export default function TelaMetas() {
 
         {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
 
-        {/* ===== INÍCIO DO ESTADO VAZIO (FAB já cuida da adição) ===== */}
+        {}
         {!isPageLoading && goals.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Target color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
@@ -379,9 +382,9 @@ export default function TelaMetas() {
               Nenhuma meta cadastrada
             </Text>
             <Text style={[styles.emptyText, { color: theme.mutedForeground }]}>
-              Use o botão **+** para criar sua primeira meta e alcançar seus objetivos!
+              Toque o botão abaixo para adicionar sua primeira meta.
             </Text>
-            {/* REMOVIDO: O botão de texto "Criar Primeira Meta" foi removido. */}
+            {}
           </View>
         ) : (
           <View style={styles.grid}>
@@ -496,7 +499,8 @@ const styles = StyleSheet.create({
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 16 },
   form: { gap: 12 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
-  dialogActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 20 },
+  // CORREÇÃO: Adicionado space-between para separar os botões no modal
+  dialogActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginTop: 20 }, 
   
   grid: { gap: 24 },
   section: { gap: 16 },
@@ -515,7 +519,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
   },
 
-  // ===== ESTILO:(FAB) =====
+  // ===== ESTILO: Botão de Ação Flutuante (FAB) =====
   fabButton: {
     position: 'absolute',
     bottom: 30, 
@@ -525,7 +529,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-   
+    
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -533,7 +537,7 @@ const styles = StyleSheet.create({
     elevation: 8, 
     zIndex: 10, 
   },
-
+  // ===== ESTILOS DO ESTADO VAZIO (Empty State) =====
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
@@ -556,7 +560,6 @@ const styles = StyleSheet.create({
     fontSize: 16, 
     marginBottom: 16, 
   },
-  
   
   segmentedControl: {
     height: 44, 
