@@ -205,9 +205,7 @@ export default function TelaPomodoro() {
                 </View>
               )}
 
-              {/* AQUI ESTÁ A MUDANÇA NO paddingHorizontal DO buttonRow
-                */}
-              <View style={[styles.buttonRow, { paddingHorizontal: 16 }]}>
+              <View style={[styles.buttonRow]}> 
                 {!isRunning ? (
                   <Botao onPress={handleStart} style={{ flex: 1 }}>
                     <Play color={theme.primaryForeground} size={18} style={{ marginRight: 8 }} />
@@ -275,7 +273,7 @@ const styles = StyleSheet.create({
   timerText: { fontSize: 60, fontWeight: '700', letterSpacing: 1.5 },
   pickerContainer: { width: '100%', gap: 8 },
   label: { fontSize: 14, fontWeight: '500', color: '#262626' },
-  buttonRow: { flexDirection: 'row', gap: 16 }, // Este estilo base já está no lugar
+  buttonRow: { flexDirection: 'row', gap: 16, paddingBottom: 10, }, 
   statsContainer: { gap: 16 },
   statText: { fontSize: 28, fontWeight: '700' },
   statSubText: { fontSize: 12, marginTop: 2 },
