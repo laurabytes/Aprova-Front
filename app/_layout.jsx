@@ -8,8 +8,9 @@ import { Redirect, Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, SafeAreaView, StyleSheet, useColorScheme, View } from 'react-native';
 import { AuthProvider, useAuth } from '../contexto/AuthContexto';
-// CORREÇÃO: Caminho correto (apenas um nível para cima)
 import { cores } from '../tema/cores'; 
+// NOVO: Importar SubjectProvider
+import { SubjectProvider } from '../contexto/SubjectContexto'; 
 
 function LayoutInicial() {
   const { user, isLoading } = useAuth();
@@ -28,6 +29,15 @@ function LayoutInicial() {
     }
   }, [user, isLoading, segments, router]); 
 
+  // Adicionar um indicador de loading enquanto carrega do AsyncStorage
+  if (isLoading) {
+    return (
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+            <ActivityIndicator size="large" color={theme.primary} />
+        </SafeAreaView>
+    );
+  }
+    
   if (!user && segments.length === 1 && segments[0] === '') {
       return <Redirect href="/(auth)/login" />;
   }
@@ -45,7 +55,10 @@ function LayoutInicial() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <LayoutInicial />
+      {/* ENVOLVER COM SubjectProvider */}
+      <SubjectProvider>
+        <LayoutInicial />
+      </SubjectProvider>
     </AuthProvider>
   );
 }

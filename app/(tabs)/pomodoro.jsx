@@ -16,22 +16,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Progress } from '../../componentes/Progress';
 import { Select, SelectItem } from '../../componentes/Select';
 import { useAuth } from '../../contexto/AuthContexto';
+import { useSubjects } from '../../contexto/SubjectContexto'; // NOVO: Importar useSubjects
 import { cores } from '../../tema/cores';
 
-// Mock de dados
-const MOCK_SUBJECTS = [
-  { id: 1, nome: 'Matemática' }, { id: 2, nome: 'História' }
-];
+// Mock de dados - ATUALIZADO
+// const MOCK_SUBJECTS = [ ... ];
 const MOCK_SESSIONS = [
     { id: 1, duracao: 25, dataInicio: new Date().toISOString(), tipo: 'TRABALHO', usuarioId: 1 }
 ];
 
 export default function TelaPomodoro() {
   const { user } = useAuth();
+  // USAR CONTEXTO: Obter subjects do contexto
+  const { subjects: availableSubjects } = useSubjects();
+  
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? cores.dark : cores.light;
 
-  const [subjects, setSubjects] = useState(MOCK_SUBJECTS);
+  // ATUALIZAR: usar subjects do contexto
+  const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
   const [sessions, setSessions] = useState(MOCK_SESSIONS);
   const [isRunning, setIsRunning] = useState(false);
@@ -44,11 +47,13 @@ export default function TelaPomodoro() {
   const breakDuration = 5 * 60;
 
   useEffect(() => {
+    // ATUALIZAR: Usar availableSubjects do contexto
+    if (availableSubjects) {
+        setSubjects(availableSubjects);
+    }
     // Simula carregamento
-    // Em uma app real, você poderia carregar dados do AsyncStorage aqui
-    setSubjects(MOCK_SUBJECTS);
     setSessions(MOCK_SESSIONS.filter(s => s.usuarioId === user?.id));
-  }, [user]);
+  }, [user, availableSubjects]); // Adicionado availableSubjects como dependência
 
   useEffect(() => {
     if (isRunning) {
@@ -105,7 +110,7 @@ export default function TelaPomodoro() {
           dataFim: endTime.toISOString(),
           tipo: sessionType,
           usuarioId: user?.id,
-          materiaId: selectedSubject ? Number(selectedSubject) : null,
+          materiaId: selectedSubject || null,
         };
         // Adiciona a sessão ao estado local
         setSessions(prev => [newSession, ...prev]);
@@ -193,7 +198,8 @@ export default function TelaPomodoro() {
                   >
                     <SelectItem label="Nenhuma matéria" value="" />
                     {subjects.map((subject) => (
-                      <SelectItem key={subject.id} label={subject.nome} value={subject.id.toString()} />
+                      // A chave (key) e o valor (value) usam o ID único da matéria
+                      <SelectItem key={subject.id} label={subject.nome} value={subject.id} /> 
                     ))}
                   </Select>
                 </View>

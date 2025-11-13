@@ -17,24 +17,11 @@ import { Botao } from '../../../componentes/Botao';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../componentes/Card';
 import { Dialog } from '../../../componentes/Dialog';
 import { Textarea } from '../../../componentes/Textarea';
+import { useSubjects } from '../../../contexto/SubjectContexto'; // NOVO: Importar useSubjects
 import { cores } from '../../../tema/cores';
 
-// Mock de dados
-const MOCK_DATA = {
-    1: { 
-        flashcards: [
-            { id: 101, pergunta: 'O que é 2+2?', resposta: '4', materiaId: 1 },
-            { id: 102, pergunta: 'O que é a fórmula de Bhaskara?', resposta: 'x = [-b ± sqrt(b² - 4ac)] / 2a', materiaId: 1 },
-        ]
-    },
-    2: {
-        flashcards: [
-            { id: 103, pergunta: 'Quem descobriu o Brasil?', resposta: 'Pedro Álvares Cabral', materiaId: 2 },
-        ]
-    }
-};
+// MOCK_DATA REMOVIDO
 
-// (Função getTextColorForBackground... sem alteração)
 function getTextColorForBackground(hexColor) {
   try {
     const hex = hexColor.replace('#', '');
@@ -52,18 +39,25 @@ export default function TelaFlashcards() {
   const params = useLocalSearchParams();
   const router = useRouter();
   
-  // ==============================================================
-  // ALTERAÇÃO 3: Recebendo 'descricaoParam'
-  // ==============================================================
+  // USAR CONTEXTO: Obter funções de flashcard e o array de flashcards
+  const { 
+    getFlashcardsBySubject, 
+    addFlashcard, 
+    updateFlashcard, 
+    deleteFlashcard 
+  } = useSubjects();
+  
   const { id: subjectId, cor: corParam, nome: nomeParam, descricao: descricaoParam } = params;
   
+  // A lista de flashcards é puxada diretamente do contexto
+  const flashcards = getFlashcardsBySubject(subjectId); 
+
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
   const [subject, setSubject] = useState(null);
-  const [flashcards, setFlashcards] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [isPageLoading, setIsPageLoading] = useState(false); 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFlashcard, setEditingFlashcard] = useState(null);
   const [formData, setFormData] = useState({ pergunta: '', resposta: '' });
@@ -73,68 +67,61 @@ export default function TelaFlashcards() {
   const [textColor, setTextColor] = useState(theme.foreground);
 
   useEffect(() => {
-    setIsPageLoading(true);
-
+    // Processamento dos parâmetros (Nome, Cor, Descrição)
     const decodedColor = corParam ? `#${corParam}` : theme.card;
     const decodedName = nomeParam ? nomeParam : 'Matéria';
-    // ==============================================================
-    // ALTERAÇÃO 3: Usando a descrição recebida
-    // ==============================================================
     const decodedDescription = descricaoParam ? descricaoParam : 'Flashcards para revisão';
 
     setSubjectColor(decodedColor);
     setTextColor(getTextColorForBackground(decodedColor));
     
-    // Atualiza o estado 'subject' com a descrição
     setSubject({ id: subjectId, nome: decodedName, descricao: decodedDescription });
 
-    // Carrega os flashcards (baseado no MOCK)
-    setTimeout(() => {
-        const data = MOCK_DATA[subjectId] || { flashcards: [] };
-        setFlashcards(data.flashcards);
-        setIsPageLoading(false);
-    }, 500);
-    
-    // Adiciona 'descricaoParam' à lista de dependências
+    if (!subjectId) {
+         Alert.alert("Erro", "Matéria não encontrada.", [
+          { text: 'OK', onPress: () => router.replace('/(tabs)/materias') }
+        ]);
+    }
   }, [subjectId, corParam, nomeParam, descricaoParam, theme]);
 
-  // (O restante do código... handleSubmit, handleDelete, etc... sem alteração)
   const handleSubmit = async () => {
+    if (formData.pergunta.trim() === '' || formData.resposta.trim() === '') {
+        Alert.alert('Erro', 'Pergunta e Resposta são obrigatórios.');
+        return;
+    }
+      
     setIsLoading(true);
     await new Promise(res => setTimeout(res, 300)); 
     try {
       if (editingFlashcard) {
-        setFlashcards(prev =>
-          prev.map(f =>
-            f.id === editingFlashcard.id ? { ...f, ...formData } : f,
-          ),
-        );
+        updateFlashcard(subjectId, { ...editingFlashcard, ...formData });
       } else {
         const newFlashcard = {
           ...formData,
-          id: Math.random(),
-          materiaId: Number(subjectId),
+          id: Date.now().toString(), // Usando string ID para consistência
+          materiaId: subjectId,
         };
-        setFlashcards(prev => [...prev, newFlashcard]);
+        addFlashcard(subjectId, newFlashcard);
       }
       setIsDialogOpen(false);
       setFormData({ pergunta: '', resposta: '' });
       setEditingFlashcard(null);
     } catch (error) {
+      console.error(error);
       Alert.alert('Erro', 'Não foi possível salvar o flashcard.');
     } finally {
         setIsLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDeleteCard = async (id) => {
     Alert.alert('Excluir Flashcard', 'Tem certeza que deseja excluir?', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Excluir',
         style: 'destructive',
         onPress: () => {
-          setFlashcards(prev => prev.filter(f => f.id !== id));
+          deleteFlashcard(subjectId, id);
         },
       },
     ]);
@@ -176,17 +163,12 @@ export default function TelaFlashcards() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerRow}>
-          {/* ===== INÍCIO DA CORREÇÃO ===== */}
           <TouchableOpacity onPress={() => router.replace('/(tabs)/materias')}>
-          {/* ===== FIM DA CORREÇÃO ===== */}
             <ArrowLeft color={theme.foreground} size={24} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             
             <Text style={[styles.title, { color: theme.foreground }]} numberOfLines={1}>{subject?.nome}</Text>
-            {/* ==============================================================
-            // ALTERAÇÃO 3: Exibindo a descrição da matéria no subtítulo
-            // ============================================================== */}
             <Text style={[styles.subtitle, { color: theme.mutedForeground }]}>
               {subject?.descricao || 'Flashcards para revisão'}
             </Text>
@@ -199,9 +181,8 @@ export default function TelaFlashcards() {
           </TouchableOpacity>
         </View>
 
-        {/* (Dialog de Flashcard... sem alteração) */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <View>
+          <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
               {editingFlashcard ? 'Editar Flashcard' : 'Novo Flashcard'}
             </Text>
@@ -219,18 +200,17 @@ export default function TelaFlashcards() {
                 placeholder="Digite a resposta"
               />
               <View style={styles.dialogActions}>
-                <Botao variant="destructive-outline" onPress={() => setIsDialogOpen(false)}>
+                <Botao variant="destructive-outline" onPress={() => setIsDialogOpen(false)} style={{flex: 1}}>
                   Cancelar
                 </Botao>
-                <Botao onPress={handleSubmit} disabled={isLoading}>
+                <Botao onPress={handleSubmit} disabled={isLoading} style={{flex: 1}}>
                   {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingFlashcard ? 'Salvar' : 'Criar')}
                 </Botao>
               </View>
             </View>
-          </View>
+          </ScrollView>
         </Dialog>
 
-        {/* (Estado vazio e lista de Flashcards... sem alteração) */}
         {flashcards.length === 0 ? (
            <Card>
             <CardContent style={styles.emptyState}>
@@ -256,7 +236,7 @@ export default function TelaFlashcards() {
                     <TouchableOpacity onPress={() => openEditDialog(flashcard)}>
                       <Edit color={textColor} size={18} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(flashcard.id)}>
+                    <TouchableOpacity onPress={() => handleDeleteCard(flashcard.id)}>
                       <Trash2 color={theme.destructive} size={18} />
                     </TouchableOpacity>
                   </View>
@@ -289,7 +269,6 @@ export default function TelaFlashcards() {
   );
 }
 
-// (Os 'styles' são os mesmos da resposta anterior, não precisa mudar)
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 20, gap: 24, paddingBottom: 60 },

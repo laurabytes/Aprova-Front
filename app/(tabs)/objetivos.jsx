@@ -13,8 +13,8 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
-  Slider
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 

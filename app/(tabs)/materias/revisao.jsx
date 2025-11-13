@@ -45,7 +45,7 @@ function shuffleArray(array) {
 export default function TelaRevisaoMista() {
   const router = useRouter();
   const scheme = useColorScheme();
-  const theme = scheme === 'dark' ? cores.dark : cores.light;
+  const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
   // Recebe o deck serializado dos parâmetros
   const params = useLocalSearchParams();
@@ -109,11 +109,11 @@ export default function TelaRevisaoMista() {
 
   const currentCard = shuffledDeck[currentIndex];
   
-  // ===== INÍCIO DA ALTERAÇÃO =====
   // Define a cor do card E a cor do texto com base no flashcard atual
   const cardColor = currentCard ? currentCard.cor : theme.card;
   const textColor = getTextColorForBackground(cardColor);
-  // ===== FIM DA ALTERAÇÃO =====
+  // NOVO: Pega o nome da matéria do flashcard
+  const materiaNome = currentCard?.materiaNome || 'Revisão Mista'; 
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -125,7 +125,8 @@ export default function TelaRevisaoMista() {
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={[styles.title, { color: theme.foreground }]} numberOfLines={1}>
-              Revisão Mista
+              {/* ATUALIZADO: Exibe o nome da matéria */}
+              {materiaNome}
             </Text>
             <Text style={[styles.subtitle, { color: theme.mutedForeground }]}>
               {shuffledDeck.length > 0 ? `Flashcard ${currentIndex + 1} de ${shuffledDeck.length}` : 'Sem flashcards'}
@@ -138,7 +139,6 @@ export default function TelaRevisaoMista() {
 
         {/* Card de Flashcard */}
         {currentCard ? (
-          // ===== ALTERAÇÃO APLICADA AQUI =====
           <Card style={[styles.card, { backgroundColor: cardColor }]}>
             <CardHeader>
               <CardTitle style={{ color: textColor }}>
@@ -166,7 +166,6 @@ export default function TelaRevisaoMista() {
               </Botao>
             </CardContent>
           </Card>
-          // ===== FIM DA ALTERAÇÃO =====
         ) : (
           <Card>
             <CardContent style={styles.emptyState}>

@@ -1,7 +1,7 @@
 // app/(tabs)/materias/index.jsx
 import { Link, useRouter } from 'expo-router';
 import { BookOpen, Edit, Plus, Shuffle, Trash2 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useState } from 'react'; // Removido useEffect
 import {
   ActivityIndicator,
   Alert,
@@ -19,7 +19,6 @@ import { Botao } from '../../../componentes/Botao';
 import { CampoDeTexto } from '../../../componentes/CampoDeTexto';
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -27,22 +26,8 @@ import {
 import { Dialog } from '../../../componentes/Dialog';
 import { Textarea } from '../../../componentes/Textarea';
 import { useAuth } from '../../../contexto/AuthContexto';
+import { useSubjects } from '../../../contexto/SubjectContexto'; // NOVO: Importar useSubjects
 import { cores } from '../../../tema/cores';
-
-// MOCK_DATA (Flashcards) - Mantido para a lógica de Sessão Mista
-const MOCK_DATA = {
-  1: {
-    flashcards: [
-      { id: 101, pergunta: 'O que é 2+2?', resposta: '4', materiaId: 1 },
-      { id: 102, pergunta: 'O que é a fórmula de Bhaskara?', resposta: 'x = [-b ± sqrt(b² - 4ac)] / 2a', materiaId: 1 },
-    ]
-  },
-  2: {
-    flashcards: [
-      { id: 103, pergunta: 'Quem descobriu o Brasil?', resposta: 'Pedro Álvares Cabral', materiaId: 2 },
-    ]
-  }
-};
 
 function getTextColorForBackground(hexColor) {
   try {
@@ -59,25 +44,26 @@ function getTextColorForBackground(hexColor) {
 
 export default function TelaMaterias() {
   const { user } = useAuth();
+  // USAR CONTEXTO: Obter subjects, loading state e funções CRUD
+  const { 
+    subjects, 
+    isLoading: isPageLoading,
+    addSubject, 
+    updateSubject, 
+    deleteSubject,
+    getFlashcardsBySubject,
+  } = useSubjects();
+  
   const router = useRouter();
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
-  const [subjects, setSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPageLoading, setIsPageLoading] = useState(true);
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
 
   const [editingSubject, setEditingSubject] = useState(null);
   const [formData, setFormData] = useState({ nome: '', descricao: '', cor: theme.primary });
-
-  useEffect(() => {
-    setIsPageLoading(true);
-    setSubjects([]);
-    setIsPageLoading(false);
-  }, [user]);
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
@@ -97,21 +83,15 @@ export default function TelaMaterias() {
 
     try {
       if (editingSubject) {
-        setSubjects(prev =>
-          prev.map(s =>
-            s.id === editingSubject.id
-              ? { ...s, nome: formData.nome, descricao: formData.descricao, cor: formData.cor }
-              : s
-          )
-        );
+        updateSubject({ ...editingSubject, nome: formData.nome, descricao: formData.descricao, cor: formData.cor });
       } else {
         const newSubject = {
           ...formData,
-          id: Math.random(),
-          usuarioId: user?.id,
+          id: Date.now().toString(), // Usando string ID para consistência
+          usuarioId: user?.id || 'guest',
           cor: formData.cor,
         };
-        setSubjects(prev => [...prev, newSubject]);
+        addSubject(newSubject);
       }
       handleCloseDialog();
     } catch (error) {
@@ -122,13 +102,13 @@ export default function TelaMaterias() {
   };
 
   const handleDelete = async (id) => {
-    Alert.alert('Excluir Matéria', 'Tem certeza que deseja excluir?', [
+    Alert.alert('Excluir Matéria', 'Tem certeza que deseja excluir? Isso excluirá todos os flashcards associados.', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Excluir',
         style: 'destructive',
         onPress: async () => {
-          setSubjects(prev => prev.filter(s => s.id !== id));
+          deleteSubject(id);
         },
       },
     ]);
@@ -148,20 +128,21 @@ export default function TelaMaterias() {
     setIsDialogOpen(true);
   };
 
+  // CORREÇÃO DA LÓGICA DE SESSÃO MISTA
   const handleStartMixedSession = () => {
-    const subjectColorMap = new Map();
-    subjects.forEach(subject => {
-      subjectColorMap.set(subject.id, subject.cor);
-    });
-
     let allFlashcards = [];
-    Object.keys(MOCK_DATA).forEach(materiaId => {
-      const materiaColor = subjectColorMap.get(Number(materiaId));
-      if (materiaColor) {
-        const materiaFlashcards = MOCK_DATA[materiaId].flashcards;
+
+    subjects.forEach(subject => {
+      const materiaId = subject.id;
+      const materiaColor = subject.cor;
+      // Puxa os flashcards do contexto
+      const materiaFlashcards = getFlashcardsBySubject(materiaId);
+      
+      if (materiaFlashcards.length > 0) {
         const flashcardsWithColor = materiaFlashcards.map(fc => ({
           ...fc,
           cor: materiaColor,
+          materiaNome: subject.nome, // Adicionar o nome para exibir na revisão
         }));
         allFlashcards = allFlashcards.concat(flashcardsWithColor);
       }
@@ -172,11 +153,13 @@ export default function TelaMaterias() {
       return;
     }
 
+    // Embaralhar o array
     for (let i = allFlashcards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [allFlashcards[i], allFlashcards[j]] = [allFlashcards[j], allFlashcards[i]];
     }
 
+    // Navegar para a tela de revisão
     router.push({
       pathname: '/(tabs)/materias/revisao',
       params: {
@@ -239,9 +222,9 @@ export default function TelaMaterias() {
             <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
               {editingSubject ? 'Editar Matéria' : 'Nova Matéria'}
             </Text>
-            <Text style={[styles.dialogDescription, { color: theme.mutedForeground }]}>
+            <CardDescription style={{ color: theme.mutedForeground, marginBottom: 16 }}>
               {editingSubject ? 'Edite as informações da matéria' : 'Adicione uma nova matéria'}
-            </Text>
+            </CardDescription>
 
             <View style={styles.form}>
               <View style={styles.inputGroup}>
@@ -292,7 +275,6 @@ export default function TelaMaterias() {
                 </View>
               )}
 
-              {/* ======== BOTÕES GRANDES (IGUAIS À TELA DE METAS) ======== */}
               <View style={[styles.dialogActions, { justifyContent: 'space-between' }]}>
                 <Botao
                   variant="destructive-outline"
@@ -313,7 +295,6 @@ export default function TelaMaterias() {
                   )}
                 </Botao>
               </View>
-              {/* ========================================================== */}
             </View>
           </ScrollView>
         </Dialog>
@@ -395,7 +376,7 @@ export default function TelaMaterias() {
     </SafeAreaView>
   );
 }
-
+// ... (styles)
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 20, gap: 24, paddingBottom: 60 },
