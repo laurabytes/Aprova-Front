@@ -281,7 +281,7 @@ export default function TelaPlanejadorSemanal() {
         ) : (
           <View style={styles.routineList}>
             <Text style={[styles.listSubtitle, { color: theme.mutedForeground }]}>
-                Blocos de estudo para **{selectedDay}**:
+                Blocos de estudo para {selectedDay}:
             </Text>
             {filteredRoutine.map(item => (
                 <RoutineItem 
@@ -361,7 +361,8 @@ export default function TelaPlanejadorSemanal() {
         style={[styles.roundFloatingButtonBase, styles.floatingButton, { backgroundColor: theme.primary }]} 
         onPress={() => handleOpenDialog(null)}
       >
-        <Plus size={28} color={theme.primaryForeground} />
+        {/* CORRIGIDO: Alterado o size de 28 para 30 para corresponder às outras telas. */}
+        <Plus size={30} color={theme.primaryForeground} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -369,7 +370,7 @@ export default function TelaPlanejadorSemanal() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 100 }, 
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 120 }, 
   
   // --- Cabeçalho e Seleção de Dia ---
   headerRow: { 
@@ -473,18 +474,17 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
+    // Propriedades de sombra fortes e corretas (iOS e Android)
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.3, 
+    shadowRadius: 5, 
+    elevation: 8, 
   },
   floatingButton: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 96,
     right: 20,
-    elevation: 8, 
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    // Removidas as propriedades de sombra redundantes/conflitantes
   },
 });

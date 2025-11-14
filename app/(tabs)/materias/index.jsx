@@ -133,7 +133,8 @@ export default function TelaMaterias() {
     let allFlashcards = [];
 
     subjects.forEach(subject => {
-      const materiaId = subject.id;
+      // CORREÇÃO: Garante que o ID da matéria é uma string, prevenindo erros de chave.
+      const materiaId = String(subject.id); 
       const materiaColor = subject.cor;
       // Puxa os flashcards do contexto
       const materiaFlashcards = getFlashcardsBySubject(materiaId);
@@ -379,7 +380,8 @@ export default function TelaMaterias() {
 // ... (styles)
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 20, gap: 24, paddingBottom: 60 },
+  // CORRIGIDO: Aumentar paddingBottom para não ser cortado pela Tab Bar
+  scrollContent: { padding: 20, gap: 24, paddingBottom: 120 }, 
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -422,7 +424,8 @@ const styles = StyleSheet.create({
 
   fabButton: {
     position: 'absolute',
-    bottom: 30,
+    // CORRIGIDO: Mover para cima da Tab Bar (bottom: 96)
+    bottom: 96, 
     right: 20,
     width: 60,
     height: 60,

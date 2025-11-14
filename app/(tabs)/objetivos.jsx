@@ -483,7 +483,8 @@ export default function TelaMetas() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 20, gap: 24, paddingBottom: 100 },
+  // CORRIGIDO: Aumentar paddingBottom para não ser cortado pela Tab Bar
+  scrollContent: { padding: 20, gap: 24, paddingBottom: 120 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 28, fontWeight: '700' },
   subtitle: { fontSize: 16, marginTop: 4 },
@@ -510,7 +511,8 @@ const styles = StyleSheet.create({
   slider: { width: '100%', height: 40 },
   fabButton: {
     position: 'absolute',
-    bottom: 30,
+    // CORRIGIDO: Mover para cima da Tab Bar (bottom: 96)
+    bottom: 96,
     right: 20,
     width: 60,
     height: 60,
