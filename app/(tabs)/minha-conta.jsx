@@ -1,3 +1,4 @@
+// app/(tabs)/minha-conta.jsx
 import { useRouter } from 'expo-router';
 import { User, Moon, Sun, ChevronsRight, LogOut, Target, ArrowLeft, KeyRound, Mail } from 'lucide-react-native'; 
 import React, { useState } from 'react';
@@ -11,10 +12,13 @@ import {
   useColorScheme,
   View,
   TextInput,
+  ActivityIndicator
 } from 'react-native';
 import { Card, CardContent, CardHeader, CardTitle } from '../../componentes/Card';
 import { Botao } from '../../componentes/Botao';
 import { useAuth } from '../../contexto/AuthContexto';
+// NOVO: Importar useStudyData
+import { useStudyData } from '../../contexto/StudyDataContexto'; 
 import { cores } from '../../tema/cores';
 
 const THEME_OPTIONS = [
@@ -91,8 +95,9 @@ export default function TelaMinhaConta() {
   const systemScheme = useColorScheme();
   const currentScheme = systemScheme;
   const theme = cores[currentScheme === 'dark' ? 'dark' : 'light'];
-
-  const [foco, setFoco] = useState('');
+  
+  // USAR CONTEXTO: Obter foco e função de atualização do contexto
+  const { foco, updateFoco, isLoading: isStudyLoading } = useStudyData(); 
 
   const handleLogout = async () => {
     Alert.alert('Sair', 'Tem certeza que deseja sair da sua conta?', [
@@ -107,6 +112,16 @@ export default function TelaMinhaConta() {
 
   const handleAlterarEmail = () => Alert.alert('Alterar E-mail', 'Função de alterar e-mail ainda não implementada.');
   const handleAlterarSenha = () => Alert.alert('Alterar Senha', 'Função de alterar senha ainda não implementada.');
+
+  // Adicionar um indicador de loading para os dados do contexto
+  if (isStudyLoading) {
+      return (
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={{ color: theme.mutedForeground, marginTop: 10 }}>Carregando foco de estudo...</Text>
+        </SafeAreaView>
+      );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -154,7 +169,7 @@ export default function TelaMinhaConta() {
             placeholder="Foco UERJ"
             placeholderTextColor={theme.mutedForeground}
             value={foco}
-            onChangeText={setFoco}
+            onChangeText={updateFoco} // USAR CONTEXTO
           />
 
           <View style={styles.divider} />

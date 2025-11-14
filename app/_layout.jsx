@@ -2,15 +2,16 @@
 
 // 1. IMPORTAR GESTURE HANDLER NO TOPO
 import 'react-native-gesture-handler';
-import { GestureHandlerRootView } from 'react-native-gesture-handler'; // 2. IMPORTAR
+import { GestureHandlerRootView } from 'react-native-gesture-handler'; 
 
 import { Redirect, Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, SafeAreaView, StyleSheet, useColorScheme, View } from 'react-native';
 import { AuthProvider, useAuth } from '../contexto/AuthContexto';
 import { cores } from '../tema/cores'; 
-// NOVO: Importar SubjectProvider
 import { SubjectProvider } from '../contexto/SubjectContexto'; 
+// NOVO: Importar StudyDataProvider
+import { StudyDataProvider } from '../contexto/StudyDataContexto'; 
 
 function LayoutInicial() {
   const { user, isLoading } = useAuth();
@@ -55,9 +56,11 @@ function LayoutInicial() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      {/* ENVOLVER COM SubjectProvider */}
       <SubjectProvider>
-        <LayoutInicial />
+        {/* ENVOLVER COM StudyDataProvider */}
+        <StudyDataProvider>
+          <LayoutInicial />
+        </StudyDataProvider>
       </SubjectProvider>
     </AuthProvider>
   );

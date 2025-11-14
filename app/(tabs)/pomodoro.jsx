@@ -8,35 +8,30 @@ import {
   StyleSheet,
   Text,
   useColorScheme,
-  View
+  View,
+  ActivityIndicator
 } from 'react-native';
-// import api from '../../lib/api'; // API REMOVIDA
 import { Botao } from '../../componentes/Botao';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../componentes/Card';
 import { Progress } from '../../componentes/Progress';
 import { Select, SelectItem } from '../../componentes/Select';
 import { useAuth } from '../../contexto/AuthContexto';
-import { useSubjects } from '../../contexto/SubjectContexto'; // NOVO: Importar useSubjects
+import { useSubjects } from '../../contexto/SubjectContexto';
+// NOVO: Importar useStudyData
+import { useStudyData } from '../../contexto/StudyDataContexto'; 
 import { cores } from '../../tema/cores';
-
-// Mock de dados - ATUALIZADO
-// const MOCK_SUBJECTS = [ ... ];
-const MOCK_SESSIONS = [
-    { id: 1, duracao: 25, dataInicio: new Date().toISOString(), tipo: 'TRABALHO', usuarioId: 1 }
-];
 
 export default function TelaPomodoro() {
   const { user } = useAuth();
-  // USAR CONTEXTO: Obter subjects do contexto
-  const { subjects: availableSubjects } = useSubjects();
+  const { subjects: availableSubjects, isLoading: isSubjectsLoading } = useSubjects();
+  // USAR CONTEXTO: Obter sessões e função de adicionar do contexto
+  const { sessions, addSession, isLoading: isStudyLoading } = useStudyData(); 
   
   const scheme = useColorScheme();
-  const theme = scheme === 'dark' ? cores.dark : cores.light;
+  const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
-  // ATUALIZAR: usar subjects do contexto
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
-  const [sessions, setSessions] = useState(MOCK_SESSIONS);
   const [isRunning, setIsRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 min
   const [sessionType, setSessionType] = useState('TRABALHO');
@@ -45,15 +40,14 @@ export default function TelaPomodoro() {
 
   const workDuration = 25 * 60;
   const breakDuration = 5 * 60;
+  
+  const isLoading = isSubjectsLoading || isStudyLoading;
 
   useEffect(() => {
-    // ATUALIZAR: Usar availableSubjects do contexto
     if (availableSubjects) {
         setSubjects(availableSubjects);
     }
-    // Simula carregamento
-    setSessions(MOCK_SESSIONS.filter(s => s.usuarioId === user?.id));
-  }, [user, availableSubjects]); // Adicionado availableSubjects como dependência
+  }, [availableSubjects]); 
 
   useEffect(() => {
     if (isRunning) {
@@ -74,7 +68,7 @@ export default function TelaPomodoro() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, sessionType]);
+  }, [isRunning, sessionType, sessions]);
 
   const handleStart = () => {
     if (!isRunning) {
@@ -104,7 +98,6 @@ export default function TelaPomodoro() {
         const duration = Math.floor((endTime.getTime() - sessionStartTime.getTime()) / 1000 / 60);
 
         const newSession = {
-          id: Math.random(),
           duracao: duration || 25,
           dataInicio: sessionStartTime.toISOString(),
           dataFim: endTime.toISOString(),
@@ -112,8 +105,8 @@ export default function TelaPomodoro() {
           usuarioId: user?.id,
           materiaId: selectedSubject || null,
         };
-        // Adiciona a sessão ao estado local
-        setSessions(prev => [newSession, ...prev]);
+        // USAR CONTEXTO: Adiciona a sessão ao contexto
+        addSession(newSession);
 
       } catch (error) {
         console.error('[v0] Error saving session:', error);
@@ -144,19 +137,37 @@ export default function TelaPomodoro() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Funções que usam o estado 'sessions' do contexto
   const getTodaySessions = () => {
     const today = new Date().toDateString();
-    return sessions.filter((s) => new Date(s.dataInicio).toDateString() === today);
+    return sessions.filter((s) => new Date(s.dataInicio).toDateString() === today && s.tipo === 'TRABALHO');
   };
 
   const getTotalMinutesToday = () => {
     return getTodaySessions().reduce((total, s) => total + s.duracao, 0);
   };
+  
+  const getAllSessions = () => {
+    return sessions.filter(s => s.tipo === 'TRABALHO');
+  }
+  
+  const getTotalMinutesOverall = () => {
+      return getAllSessions().reduce((total, s) => total + s.duracao, 0);
+  }
 
   const progress =
     (((sessionType === 'TRABALHO' ? workDuration : breakDuration) - timeLeft) /
       (sessionType === 'TRABALHO' ? workDuration : breakDuration)) *
     100;
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={{ color: theme.mutedForeground, marginTop: 10 }}>Carregando dados...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -228,7 +239,7 @@ export default function TelaPomodoro() {
             <Card style={{ width: '100%' }}>
               <CardHeader>
                 <CardTitle style={{ color: theme.foreground }}>Hoje</CardTitle>
-                <CardDescription>Sessões completadas</CardDescription>
+                <CardDescription>Sessões de Trabalho completadas</CardDescription>
               </CardHeader>
               <CardContent>
                 <Text style={[styles.statText, { color: theme.foreground }]}>
@@ -242,14 +253,14 @@ export default function TelaPomodoro() {
             <Card style={{ width: '100%' }}>
               <CardHeader>
                 <CardTitle style={{ color: theme.foreground }}>Total</CardTitle>
-                <CardDescription>Todas as sessões</CardDescription>
+                <CardDescription>Todas as sessões de Trabalho</CardDescription>
               </CardHeader>
               <CardContent>
                 <Text style={[styles.statText, { color: theme.foreground }]}>
-                  {sessions.length}
+                  {getAllSessions().length}
                 </Text>
                 <Text style={[styles.statSubText, { color: theme.mutedForeground }]}>
-                  {sessions.reduce((total, s) => total + s.duracao, 0)} minutos
+                  {getTotalMinutesOverall()} minutos
                 </Text>
               </CardContent>
             </Card>

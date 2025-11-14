@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit'; 
 import {
@@ -28,24 +29,11 @@ import {
   CardTitle,
 } from '../../componentes/Card';
 import { useAuth } from '../../contexto/AuthContexto';
+// NOVO: Importar useSubjects
+import { useSubjects } from '../../contexto/SubjectContexto'; 
+// NOVO: Importar useStudyData
+import { useStudyData } from '../../contexto/StudyDataContexto'; 
 import { cores } from '../../tema/cores';
-
-const MOCK_DASHBOARD_DATA = {
-  1: {
-    materias: 2,
-    flashcards: 3,
-    objetivos: 1, 
-    pomodoro: 5,
-    performance: [
-      { dia: 'Seg', valor: 20 },
-      { dia: 'Ter', valor: 45 },
-      { dia: 'Qua', valor: 70 },
-      { dia: 'Qui', valor: 65 },
-      { dia: 'Sex', valor: 90 },
-      { dia: 'Sáb', valor: 75 },
-    ],
-  },
-};
 
 function StatCard({ title, value, description, icon: Icon }) {
   const scheme = useColorScheme();
@@ -70,12 +58,13 @@ function StatCard({ title, value, description, icon: Icon }) {
   );
 }
 
-function PerformanceChart({ performanceData }) {
+function StudyMinutesChart({ studyData }) {
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
   const screenWidth = Dimensions.get('window').width;
   const scrollViewPaddingHorizontal = 20;
+  // Calcula a largura subtraindo os paddings laterais
   const chartWidth = screenWidth - scrollViewPaddingHorizontal * 2 - 10; 
 
   const chartConfig = {
@@ -96,22 +85,36 @@ function PerformanceChart({ performanceData }) {
   };
 
   const chartData = {
-    labels: performanceData.map((d) => d.dia),
+    labels: studyData.map((d) => d.dia),
     datasets: [
       {
-        data: performanceData.map((d) => d.valor),
+        data: studyData.map((d) => d.valor),
       },
     ],
   };
+  
+  // Condição para não renderizar o gráfico se não houver dados de estudo
+  if (studyData.every(d => d.valor === 0)) {
+    return (
+        <Card style={{ padding: 20 }}>
+            <CardTitle style={{ color: theme.foreground, fontSize: 20, marginBottom: 8 }}>
+              Minutos de Estudo Semanal
+            </CardTitle>
+            <CardDescription>
+              Inicie uma sessão Pomodoro para visualizar seu desempenho semanal aqui.
+            </CardDescription>
+        </Card>
+    );
+  }
 
   return (
     <Card style={{ padding: 0 }}>
       <CardHeader style={{ paddingBottom: 0, paddingHorizontal: 20 }}>
         <CardTitle style={{ color: theme.foreground, fontSize: 20 }}>
-          Desempenho Semanal (%)
+          Minutos de Estudo Semanal (Pomodoro)
         </CardTitle>
         <CardDescription>
-          Representa o seu índice de completude de tarefas e metas.
+          Tempo de estudo acumulado em sessões de Trabalho.
         </CardDescription>
       </CardHeader>
       <View style={{ paddingTop: 16, alignItems: 'center' }}>
@@ -135,6 +138,10 @@ function PerformanceChart({ performanceData }) {
 
 export default function TelaDashboard() {
   const { user } = useAuth();
+  // NOVO: Consumir contextos
+  const { subjects, isLoading: isSubjectsLoading, getFlashcardsBySubject } = useSubjects();
+  const { goals, sessions, getDailyStudyMinutesData, isLoading: isStudyLoading } = useStudyData();
+  
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
   const router = useRouter();
@@ -144,17 +151,55 @@ export default function TelaDashboard() {
     flashcards: 0,
     objetivos: 0,
     pomodoro: 0,
-    performance: [],
+    studyData: [],
   });
+  
+  const isLoading = isSubjectsLoading || isStudyLoading;
 
   useEffect(() => {
-    const userId = user?.id || 1;
-    const data = MOCK_DASHBOARD_DATA[userId] || MOCK_DASHBOARD_DATA[1];
+    // CALCULAR DADOS REAIS
+    if (!isLoading) {
+        
+        // 1. Matérias
+        const totalMaterias = subjects.length;
 
-    if (data) {
-      setStats(data);
+        // 2. Flashcards
+        const totalFlashcards = subjects.reduce((sum, subject) => {
+            // Garante que o subject.id é usado para buscar os flashcards
+            const flashcards = getFlashcardsBySubject(subject.id); 
+            return sum + (flashcards?.length || 0);
+        }, 0);
+
+        // 3. Metas Ativas (EM_ANDAMENTO)
+        const activeGoals = goals.filter(g => g.status === 'EM_ANDAMENTO');
+        const totalObjetivos = activeGoals.length;
+        
+        // 4. Sessões Pomodoro de Trabalho completadas
+        const completedWorkSessions = sessions.filter(s => s.tipo === 'TRABALHO');
+        const totalPomodoro = completedWorkSessions.length;
+        
+        // 5. Dados para o Gráfico (Minutos de Estudo Diário)
+        const weeklyStudyData = getDailyStudyMinutesData();
+
+        setStats({
+            materias: totalMaterias,
+            flashcards: totalFlashcards,
+            objetivos: totalObjetivos,
+            pomodoro: totalPomodoro,
+            studyData: weeklyStudyData,
+        });
     }
-  }, [user]);
+  }, [isLoading, subjects, goals, sessions, getFlashcardsBySubject, getDailyStudyMinutesData]);
+
+  
+  if (isLoading) {
+      return (
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={{ color: theme.mutedForeground, marginTop: 10 }}>Carregando dados...</Text>
+        </SafeAreaView>
+      );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -179,9 +224,8 @@ export default function TelaDashboard() {
         </View>
         {/* Fim Cabeçalho */}
 
-        {stats.performance.length > 0 && (
-          <PerformanceChart performanceData={stats.performance} />
-        )}
+        {/* GRÁFICO ATUALIZADO (StudyMinutesChart) */}
+        <StudyMinutesChart studyData={stats.studyData} />
 
         {/* Estatísticas */}
         <View style={styles.grid}>
@@ -221,6 +265,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
     gap: 32,
+    paddingBottom: 60, // Adicionado para evitar que a Tab Bar esconda o conteúdo
   },
   header: {
     flexDirection: 'row',

@@ -32,6 +32,8 @@ import { Dialog } from '../../componentes/Dialog';
 import { Progress } from '../../componentes/Progress';
 import { Textarea } from '../../componentes/Textarea';
 import { useAuth } from '../../contexto/AuthContexto';
+// NOVO: Importar useStudyData
+import { useStudyData } from '../../contexto/StudyDataContexto'; 
 import { cores } from '../../tema/cores';
 
 // Função para formatar a data de YYYY-MM-DD para DD/MM/AAAA
@@ -46,9 +48,17 @@ export default function TelaMetas() {
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
-  const [goals, setGoals] = useState([]);
+  // USAR CONTEXTO: Obter dados e funções de metas
+  const { 
+    goals, 
+    updateGoal, 
+    addGoal, 
+    deleteGoal, 
+    toggleGoalStatus, 
+    isLoading: isContextLoading 
+  } = useStudyData();
+
   const [isLoading, setIsLoading] = useState(false);
-  const [isPageLoading, setIsPageLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
   const [showDatePickerFor, setShowDatePickerFor] = useState(null);
@@ -57,19 +67,13 @@ export default function TelaMetas() {
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
-    dataInicio: '',
+    dataInicio: new Date().toISOString().split('T')[0], // Define padrão
     dataFim: '',
     status: 'EM_ANDAMENTO',
     progresso: 0,
   });
 
-  useEffect(() => {
-    setIsPageLoading(true);
-    setGoals([]);
-    setIsPageLoading(false);
-  }, [user]);
-
-  // Atualização de progresso via Slider
+  // Atualização de progresso via Slider (usando updateGoal do contexto)
   const handleProgressChange = (goalId, newProgressValue) => {
     const progressoValido = Math.max(0, Math.min(100, Math.round(newProgressValue)));
     let newStatus = 'EM_ANDAMENTO';
@@ -78,19 +82,17 @@ export default function TelaMetas() {
       newStatus = 'CONCLUIDO';
     }
 
-    setGoals(prev =>
-      prev.map(g =>
-        g.id === goalId
-          ? { ...g, progresso: progressoValido, status: newStatus }
-          : g,
-      ),
-    );
+    const goalToUpdate = goals.find(g => g.id === goalId);
+    if(goalToUpdate) {
+        updateGoal({ ...goalToUpdate, progresso: progressoValido, status: newStatus });
+    }
   };
 
   // ======== Date Picker ========
   const getDateValue = (dateString) => {
     if (dateString) {
-      const date = new Date(dateString + 'T00:00:00');
+      // Adiciona 'T00:00:00' para garantir que a data seja interpretada corretamente no fuso horário local
+      const date = new Date(dateString + 'T00:00:00'); 
       if (!isNaN(date.getTime())) {
         return date;
       }
@@ -100,7 +102,7 @@ export default function TelaMetas() {
 
   const openDatePicker = (field) => {
     setShowDatePickerFor(field);
-    setTempDate(getDateValue(formData[field]));
+    setTempDate(getDateValue(formData[field] || new Date().toISOString().split('T')[0]));
   };
 
   const onDateChange = (event, selectedDate) => {
@@ -130,6 +132,11 @@ export default function TelaMetas() {
   // ==============================
 
   const handleSubmit = async () => {
+    if (formData.titulo.trim() === '') {
+        Alert.alert('Campo Obrigatório', 'Por favor, preencha o título da meta.');
+        return;
+    }
+    
     // Validação de datas
     if (formData.dataFim && formData.dataInicio) {
       const dataInicio = new Date(formData.dataInicio + 'T00:00:00');
@@ -144,7 +151,6 @@ export default function TelaMetas() {
     await new Promise(res => setTimeout(res, 300));
 
     try {
-      // ⚙️ corrigido para LET (antes era const e dava erro!)
       let progressoInicial = editingGoal ? editingGoal.progresso : 0;
       let statusFinal = formData.status;
 
@@ -152,34 +158,43 @@ export default function TelaMetas() {
         if (formData.status === 'CONCLUIDO' && progressoInicial !== 100) {
           progressoInicial = 100;
         }
+        if (formData.status === 'EM_ANDAMENTO' && progressoInicial === 100) {
+          progressoInicial = 0; // Se voltar para EM_ANDAMENTO, reseta progresso
+        }
       }
 
       const dadosSalvos = {
-        ...formData,
+        titulo: formData.titulo,
+        descricao: formData.descricao,
+        dataInicio: formData.dataInicio,
+        dataFim: formData.dataFim,
         progresso: progressoInicial,
         status: statusFinal,
       };
 
       if (editingGoal) {
-        setGoals(prev =>
-          prev.map(g =>
-            g.id === editingGoal.id
-              ? { ...g, ...dadosSalvos }
-              : g,
-          ),
-        );
+        // USAR CONTEXTO
+        updateGoal({ ...editingGoal, ...dadosSalvos });
       } else {
         const newGoal = {
           ...dadosSalvos,
-          id: Math.random(),
           usuarioId: user?.id,
           progresso: 0,
         };
-        setGoals(prev => [...prev, newGoal]);
+        // USAR CONTEXTO
+        addGoal(newGoal);
       }
 
       setIsDialogOpen(false);
       setEditingGoal(null);
+      setFormData({
+        titulo: '',
+        descricao: '',
+        dataInicio: new Date().toISOString().split('T')[0],
+        dataFim: '',
+        status: 'EM_ANDAMENTO',
+        progresso: 0,
+      });
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível salvar a meta.');
     } finally {
@@ -194,19 +209,16 @@ export default function TelaMetas() {
         text: 'Excluir',
         style: 'destructive',
         onPress: () => {
-          setGoals(prev => prev.filter(g => g.id !== id));
+          // USAR CONTEXTO
+          deleteGoal(id);
         },
       },
     ]);
   };
 
   const toggleStatus = (goal) => {
-    const newStatus = goal.status === 'CONCLUIDO' ? 'EM_ANDAMENTO' : 'CONCLUIDO';
-    const newProgress = newStatus === 'CONCLUIDO' ? 100 : 0;
-
-    setGoals(prev =>
-      prev.map(g => (g.id === goal.id ? { ...g, status: newStatus, progresso: newProgress } : g)),
-    );
+    // USAR CONTEXTO
+    toggleGoalStatus(goal);
   };
 
   const openEditDialog = (goal) => {
@@ -358,9 +370,9 @@ export default function TelaMetas() {
           </ScrollView>
         </Dialog>
 
-        {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
+        {isContextLoading && <ActivityIndicator size="large" color={theme.primary} />}
 
-        {!isPageLoading && goals.length === 0 ? (
+        {!isContextLoading && goals.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Target color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
             <Text style={[styles.emptyTitle, { color: theme.foreground }]}>Nenhuma meta cadastrada</Text>
@@ -472,7 +484,7 @@ export default function TelaMetas() {
         )}
       </ScrollView>
 
-      {!isPageLoading && (
+      {!isContextLoading && (
         <TouchableOpacity style={[styles.fabButton, { backgroundColor: theme.primary }]} onPress={openCreateDialog}>
           <Plus size={30} color={theme.primaryForeground} />
         </TouchableOpacity>

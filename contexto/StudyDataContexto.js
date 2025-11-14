@@ -19,18 +19,20 @@ export function useStudyData() {
 }
 
 // ==============================================================
-// LÓGICA DO POMODORO
+// LÓGICA DO POMODORO (para o gráfico)
 // ==============================================================
 const getDailyStudyMinutes = (sessions) => {
     const dailyData = {};
     const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     
+    // Filtra apenas sessões de 'TRABALHO' e soma a duração
     sessions.filter(s => s.tipo === 'TRABALHO').forEach(session => {
       const date = new Date(session.dataInicio);
       const dayName = days[date.getDay()];
       dailyData[dayName] = (dailyData[dayName] || 0) + session.duracao;
     });
     
+    // Retorna os dados ordenados pela semana
     return days.map(day => ({ dia: day, valor: dailyData[day] || 0 }));
 };
 
@@ -125,6 +127,7 @@ export function StudyDataProvider({ children }) {
 
   // Ações de Pomodoro
   const addSession = (newSession) => {
+    // Adiciona o ID no contexto
     setSessions(prev => [{ ...newSession, id: Date.now().toString() }, ...prev]);
   };
   
