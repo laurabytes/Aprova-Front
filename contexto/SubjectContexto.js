@@ -1,6 +1,7 @@
-// laurabytes/aprova-front/Aprova-Front-9e5fd88febe483dcb9d8589e063cb1ddd4a74884/contexto/SubjectContexto.js
+// laurabytes/aprova-front/Aprova-Front-a2673b7d96b43f3032686fb9ef44966c6caebbb4/contexto/SubjectContexto.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import api from '../servicos/api'; // 👈 Importando a instância Axios
 
 const SubjectContext = createContext(undefined);
 
@@ -12,46 +13,31 @@ export function useSubjects() {
   return context;
 }
 
-// 👇 SUBSTITUA PELO SEU IP! (Porta 8409)
-const API_BASE_URL = 'http://SEU_IP_AQUI:8409/api'; 
-
 export function SubjectProvider({ children }) {
   const [subjects, setSubjects] = useState([]);
   const [flashcardsData, setFlashcardsData] = useState({}); 
   const [isLoading, setIsLoading] = useState(true);
 
-  // Função auxiliar para pegar o Token
-  const getAuthHeaders = async () => {
-    const user = await AsyncStorage.getItem('user');
-    const token = user ? JSON.parse(user).token : null;
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : ''
-    };
-  };
-
   // 1. Carregar Dados da API
   useEffect(() => {
     const loadData = async () => {
       try {
-        const headers = await getAuthHeaders();
         
-        // A. Busca as Matérias
-        const resMat = await fetch(`${API_BASE_URL}/materias/listar`, { headers });
-        const materias = await resMat.json();
+        // A. Busca as Matérias (GET /materias/listar)
+        const resMat = await api.get('/materias/listar');
+        const materias = resMat.data; 
         
-        // Atualiza estado de matérias (garantindo que é um array)
         if (Array.isArray(materias)) {
              setSubjects(materias);
              
              // B. Busca Flashcards para cada matéria
-             // Isso mantém a estrutura { idMateria: [cards] } que seu front usa
              const flashcardsMap = {};
              
              await Promise.all(materias.map(async (materia) => {
                  try {
-                     const resFlash = await fetch(`${API_BASE_URL}/flashcards/listar/materia/${materia.id}`, { headers });
-                     const cards = await resFlash.json();
+                     // GET /flashcards/listar/materia/{materiaId}
+                     const resFlash = await api.get(`/flashcards/listar/materia/${materia.id}`);
+                     const cards = resFlash.data;
                      flashcardsMap[materia.id] = Array.isArray(cards) ? cards : [];
                  } catch (err) {
                      console.error(`Erro ao carregar flashcards da materia ${materia.id}`, err);
@@ -75,41 +61,26 @@ export function SubjectProvider({ children }) {
 
   const addSubject = async (newSubject) => {
     try {
-        const headers = await getAuthHeaders();
-        // POST /api/materias/criar
-        const response = await fetch(`${API_BASE_URL}/materias/criar`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ nome: newSubject.nome }) // O backend espera um DTO
-        });
-        if (response.ok) {
-            const savedSubject = await response.json();
-            setSubjects(prev => [...prev, savedSubject]);
-        }
+        // POST /materias/criar
+        const response = await api.post('/materias/criar', { nome: newSubject.nome });
+        const savedSubject = response.data;
+        setSubjects(prev => [...prev, savedSubject]);
     } catch (e) { console.error("Erro ao criar matéria", e); }
   };
 
   const updateSubject = async (updatedSubject) => {
     try {
-        const headers = await getAuthHeaders();
-        // PUT /api/materias/atualizar/{id}
-        const response = await fetch(`${API_BASE_URL}/materias/atualizar/${updatedSubject.id}`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify({ nome: updatedSubject.nome })
-        });
-        if (response.ok) {
-            const saved = await response.json();
-            setSubjects(prev => prev.map(s => (s.id === saved.id ? saved : s)));
-        }
+        // PUT /materias/atualizar/{id}
+        const response = await api.put(`/materias/atualizar/${updatedSubject.id}`, { nome: updatedSubject.nome });
+        const saved = response.data;
+        setSubjects(prev => prev.map(s => (s.id === saved.id ? saved : s)));
     } catch (e) { console.error("Erro ao atualizar matéria", e); }
   };
 
   const deleteSubject = async (id) => {
     try {
-        const headers = await getAuthHeaders();
-        // DELETE /api/materias/apagar/{id}
-        await fetch(`${API_BASE_URL}/materias/apagar/${id}`, { method: 'DELETE', headers });
+        // DELETE /materias/apagar/{id}
+        await api.delete(`/materias/apagar/${id}`);
         
         setSubjects(prev => prev.filter(s => s.id !== id));
         setFlashcardsData(prev => {
@@ -128,61 +99,45 @@ export function SubjectProvider({ children }) {
 
   const addFlashcard = async (subjectId, newFlashcard) => {
     try {
-        const headers = await getAuthHeaders();
-        // POST /api/flashcards/criar
-        // O DTO requer: pergunta, resposta, e materiaId
+        // POST /flashcards/criar
         const payload = {
             pergunta: newFlashcard.pergunta,
             resposta: newFlashcard.resposta,
             materiaId: subjectId 
         };
 
-        const response = await fetch(`${API_BASE_URL}/flashcards/criar`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(payload)
-        });
-
-        if (response.ok) {
-            const savedCard = await response.json();
-            setFlashcardsData(prev => ({
-                ...prev,
-                [subjectId]: [...(prev[subjectId] || []), savedCard],
-            }));
-        }
+        const response = await api.post('/flashcards/criar', payload);
+        const savedCard = response.data;
+        
+        setFlashcardsData(prev => ({
+            ...prev,
+            [subjectId]: [...(prev[subjectId] || []), savedCard],
+        }));
     } catch (e) { console.error("Erro ao criar flashcard", e); }
   };
 
   const updateFlashcard = async (subjectId, updatedFlashcard) => {
-      // Implementação similar usando PUT /api/flashcards/atualizar/{id}
-      // Você pode implementar se necessário, seguindo a lógica acima
       try {
-          const headers = await getAuthHeaders();
+          // PUT /flashcards/atualizar/{id}
           const payload = {
               pergunta: updatedFlashcard.pergunta,
               resposta: updatedFlashcard.resposta,
               materiaId: subjectId
           };
-           const response = await fetch(`${API_BASE_URL}/flashcards/atualizar/${updatedFlashcard.id}`, {
-              method: 'PUT',
-              headers,
-              body: JSON.stringify(payload)
-          });
-          if(response.ok){
-              const saved = await response.json();
-              setFlashcardsData(prev => ({
-                ...prev,
-                [subjectId]: (prev[subjectId] || []).map(f => f.id === saved.id ? saved : f),
-              }));
-          }
+           const response = await api.put(`/flashcards/atualizar/${updatedFlashcard.id}`, payload);
+           const saved = response.data;
+
+          setFlashcardsData(prev => ({
+            ...prev,
+            [subjectId]: (prev[subjectId] || []).map(f => f.id === saved.id ? saved : f),
+          }));
       } catch(e) { console.error("Erro update flashcard", e); }
   };
 
   const deleteFlashcard = async (subjectId, flashcardId) => {
      try {
-         const headers = await getAuthHeaders();
-         // DELETE /api/flashcards/apagar/{id}
-         await fetch(`${API_BASE_URL}/flashcards/apagar/${flashcardId}`, { method: 'DELETE', headers });
+         // DELETE /flashcards/apagar/{id}
+         await api.delete(`/flashcards/apagar/${flashcardId}`);
          
          setFlashcardsData(prev => ({
             ...prev,

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import api from '../servicos/api'; // 👈 Importando a instância Axios
 
 const AuthContext = createContext(undefined);
 
@@ -10,10 +11,6 @@ export function useAuth() {
   }
   return context;
 }
-
-// 👇 SUBSTITUA PELO SEU IP LOCAL (NÃO USE 'localhost' SE ESTIVER NO CELULAR/EMULADOR)
-// Exemplo: 'http://192.168.15.10:8409/api/usuarios'
-const API_BASE_URL = 'http://SEU_IP_AQUI:8409/api/usuarios'; 
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -37,24 +34,14 @@ export function AuthProvider({ children }) {
   
   const login = async (email, password) => { 
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Credenciais inválidas ou erro no servidor.');
-      }
+      // 🚀 USANDO AXIOS. O Base URL e Headers são automáticos
+      const response = await api.post('/usuarios/login', { email, password });
       
-      const data = await response.json(); 
+      const data = response.data; 
       
-      // O Backend atual retorna apenas { token: "..." }
-      // Como não temos ID ou Nome na resposta do login, usamos o email digitado.
       const userToStore = { 
         email: email, 
         token: data.token, 
-        // Nome e ID ficarão vazios por enquanto pois o DTO do backend não retorna eles.
         nome: 'Usuário', 
         id: null
       }; 
@@ -63,37 +50,29 @@ export function AuthProvider({ children }) {
       setUser(userToStore); 
       
     } catch (error) {
-      console.error('Erro ao autenticar:', error);
-      throw new Error(error.message);
+      // Tratamento de erro aprimorado com Axios
+      const message = error.response?.data?.message || 'Credenciais inválidas ou erro no servidor.';
+      console.error('Erro ao autenticar:', error.message);
+      throw new Error(message);
     }
   };
 
   const register = async (nome, email, password) => { 
     try {
-      const response = await fetch(`${API_BASE_URL}/criar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      // 🚀 USANDO AXIOS. 
+      await api.post('/usuarios/criar', {
           nome, 
           email, 
           password,
-          // 👇 O Backend exige este campo! Verifique se o nome é esse mesmo no Java.
           role: 'ROLE_USER' 
-        }),
       });
-
-      if (!response.ok) {
-        // Tenta capturar erro do backend, se houver
-        const errorText = await response.text(); 
-        throw new Error(errorText || 'Falha ao criar usuário.');
-      }
       
-      // Se deu certo (201 Created), faz o login automático
       await login(email, password);
 
     } catch (error) {
-      console.error('Erro ao cadastrar:', error);
-      throw new Error('Não foi possível cadastrar. Verifique os dados.');
+      const message = error.response?.data?.message || 'Não foi possível cadastrar. Verifique os dados.';
+      console.error('Erro ao cadastrar:', error.message);
+      throw new Error(message);
     }
   };
 
