@@ -1,12 +1,8 @@
-// laurabytes/teste/teste-2245de4fd0484947e9d28a093b91aba0b792499b/contexto/AuthContexto.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useContext, useEffect, useState } from 'react'; // Adicionado 'useContext'
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext(undefined);
 
-/**
- * Hook customizado para acessar os dados de autenticação.
- */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -15,21 +11,19 @@ export function useAuth() {
   return context;
 }
 
+// 👇 SUBSTITUA PELO SEU IP LOCAL (NÃO USE 'localhost' SE ESTIVER NO CELULAR/EMULADOR)
+// Exemplo: 'http://192.168.15.10:8409/api/usuarios'
+const API_BASE_URL = 'http://SEU_IP_AQUI:8409/api/usuarios'; 
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  // ESSENCIAL: Comece 'isLoading' como 'true' para evitar o redirecionamento imediato
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadUserFromStorage = async () => {
-      // ... (lógica de AsyncStorage)
-      
-      // O bloco finally garante que o carregamento termine, 
-      // permitindo que a lógica no _layout.jsx prossiga.
       try {
         const storedUser = await AsyncStorage.getItem('user');
         if (storedUser) {
-          // Simulando que o usuário tem um nome para usar no Dashboard
           setUser(JSON.parse(storedUser));
         }
       } catch (e) {
@@ -41,27 +35,68 @@ export function AuthProvider({ children }) {
     loadUserFromStorage();
   }, []);
   
-  // SIMULAÇÃO: Função de Login
   const login = async (email, password) => { 
-    // Simulação: Apenas o usuário 'teste@email.com' com senha '123456' funciona
-    if (email === 'teste@email.com' && password === '123456') {
-      const mockUser = { id: 1, email, nome: 'Usuário Teste' };
-      await AsyncStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Credenciais inválidas ou erro no servidor.');
+      }
+      
+      const data = await response.json(); 
+      
+      // O Backend atual retorna apenas { token: "..." }
+      // Como não temos ID ou Nome na resposta do login, usamos o email digitado.
+      const userToStore = { 
+        email: email, 
+        token: data.token, 
+        // Nome e ID ficarão vazios por enquanto pois o DTO do backend não retorna eles.
+        nome: 'Usuário', 
+        id: null
+      }; 
+
+      await AsyncStorage.setItem('user', JSON.stringify(userToStore));
+      setUser(userToStore); 
+      
+    } catch (error) {
+      console.error('Erro ao autenticar:', error);
+      throw new Error(error.message);
     }
-    throw new Error('Credenciais inválidas. Tente "teste@email.com" e "123456".');
   };
 
-  // SIMULAÇÃO: Função de Cadastro
   const register = async (nome, email, password) => { 
-    // Simulação: Cria um novo usuário
-    const mockUser = { id: Math.random(), email, nome };
-    await AsyncStorage.setItem('user', JSON.stringify(mockUser));
-    setUser(mockUser);
+    try {
+      const response = await fetch(`${API_BASE_URL}/criar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          nome, 
+          email, 
+          password,
+          // 👇 O Backend exige este campo! Verifique se o nome é esse mesmo no Java.
+          role: 'ROLE_USER' 
+        }),
+      });
+
+      if (!response.ok) {
+        // Tenta capturar erro do backend, se houver
+        const errorText = await response.text(); 
+        throw new Error(errorText || 'Falha ao criar usuário.');
+      }
+      
+      // Se deu certo (201 Created), faz o login automático
+      await login(email, password);
+
+    } catch (error) {
+      console.error('Erro ao cadastrar:', error);
+      throw new Error('Não foi possível cadastrar. Verifique os dados.');
+    }
   };
 
-  // SIMULAÇÃO: Função de Logout
   const logout = async () => { 
     await AsyncStorage.removeItem('user');
     setUser(null);
@@ -73,6 +108,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-
-// O hook useAuth foi adicionado acima
-// O (export useAuth) está no topo agora
