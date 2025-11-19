@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import api from '../servicos/api'; // 👈 Importando a instância Axios
+import UsuarioService from '../servicos/UsuarioService'; // 👈 Importa o novo serviço
 
 const AuthContext = createContext(undefined);
 
@@ -34,10 +34,8 @@ export function AuthProvider({ children }) {
   
   const login = async (email, password) => { 
     try {
-      // 🚀 USANDO AXIOS. O Base URL e Headers são automáticos
-      const response = await api.post('/usuarios/login', { email, password });
-      
-      const data = response.data; 
+      // 🚀 Chamada simplificada ao Service
+      const data = await UsuarioService.login(email, password);
       
       const userToStore = { 
         email: email, 
@@ -50,7 +48,7 @@ export function AuthProvider({ children }) {
       setUser(userToStore); 
       
     } catch (error) {
-      // Tratamento de erro aprimorado com Axios
+      // Tratamento de erro centralizado
       const message = error.response?.data?.message || 'Credenciais inválidas ou erro no servidor.';
       console.error('Erro ao autenticar:', error.message);
       throw new Error(message);
@@ -59,14 +57,10 @@ export function AuthProvider({ children }) {
 
   const register = async (nome, email, password) => { 
     try {
-      // 🚀 USANDO AXIOS. 
-      await api.post('/usuarios/criar', {
-          nome, 
-          email, 
-          password,
-          role: 'ROLE_USER' 
-      });
+      // 🚀 Chamada simplificada ao Service
+      await UsuarioService.register(nome, email, password);
       
+      // Se deu certo, faz o login automático
       await login(email, password);
 
     } catch (error) {

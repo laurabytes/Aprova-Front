@@ -1,7 +1,8 @@
 // laurabytes/aprova-front/Aprova-Front-a2673b7d96b43f3032686fb9ef44966c6caebbb4/contexto/SubjectContexto.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import api from '../servicos/api'; // 👈 Importando a instância Axios
+import MateriaService from '../servicos/MateriaService'; // 👈 Importa o novo serviço
+import FlashcardService from '../servicos/FlashcardService'; // 👈 Importa o novo serviço
 
 const SubjectContext = createContext(undefined);
 
@@ -23,9 +24,8 @@ export function SubjectProvider({ children }) {
     const loadData = async () => {
       try {
         
-        // A. Busca as Matérias (GET /materias/listar)
-        const resMat = await api.get('/materias/listar');
-        const materias = resMat.data; 
+        // A. Busca as Matérias
+        const materias = await MateriaService.listar();
         
         if (Array.isArray(materias)) {
              setSubjects(materias);
@@ -35,9 +35,7 @@ export function SubjectProvider({ children }) {
              
              await Promise.all(materias.map(async (materia) => {
                  try {
-                     // GET /flashcards/listar/materia/{materiaId}
-                     const resFlash = await api.get(`/flashcards/listar/materia/${materia.id}`);
-                     const cards = resFlash.data;
+                     const cards = await FlashcardService.listarPorMateria(materia.id);
                      flashcardsMap[materia.id] = Array.isArray(cards) ? cards : [];
                  } catch (err) {
                      console.error(`Erro ao carregar flashcards da materia ${materia.id}`, err);
@@ -61,26 +59,24 @@ export function SubjectProvider({ children }) {
 
   const addSubject = async (newSubject) => {
     try {
-        // POST /materias/criar
-        const response = await api.post('/materias/criar', { nome: newSubject.nome });
-        const savedSubject = response.data;
+        // 🚀 Chamada simplificada ao Service
+        const savedSubject = await MateriaService.criar(newSubject.nome);
         setSubjects(prev => [...prev, savedSubject]);
     } catch (e) { console.error("Erro ao criar matéria", e); }
   };
 
   const updateSubject = async (updatedSubject) => {
     try {
-        // PUT /materias/atualizar/{id}
-        const response = await api.put(`/materias/atualizar/${updatedSubject.id}`, { nome: updatedSubject.nome });
-        const saved = response.data;
+        // 🚀 Chamada simplificada ao Service
+        const saved = await MateriaService.atualizar(updatedSubject.id, updatedSubject.nome);
         setSubjects(prev => prev.map(s => (s.id === saved.id ? saved : s)));
     } catch (e) { console.error("Erro ao atualizar matéria", e); }
   };
 
   const deleteSubject = async (id) => {
     try {
-        // DELETE /materias/apagar/{id}
-        await api.delete(`/materias/apagar/${id}`);
+        // 🚀 Chamada simplificada ao Service
+        await MateriaService.apagar(id);
         
         setSubjects(prev => prev.filter(s => s.id !== id));
         setFlashcardsData(prev => {
@@ -99,15 +95,12 @@ export function SubjectProvider({ children }) {
 
   const addFlashcard = async (subjectId, newFlashcard) => {
     try {
-        // POST /flashcards/criar
-        const payload = {
-            pergunta: newFlashcard.pergunta,
-            resposta: newFlashcard.resposta,
-            materiaId: subjectId 
-        };
-
-        const response = await api.post('/flashcards/criar', payload);
-        const savedCard = response.data;
+        // 🚀 Chamada simplificada ao Service
+        const savedCard = await FlashcardService.criar(
+            newFlashcard.pergunta, 
+            newFlashcard.resposta, 
+            subjectId
+        );
         
         setFlashcardsData(prev => ({
             ...prev,
@@ -118,14 +111,13 @@ export function SubjectProvider({ children }) {
 
   const updateFlashcard = async (subjectId, updatedFlashcard) => {
       try {
-          // PUT /flashcards/atualizar/{id}
-          const payload = {
-              pergunta: updatedFlashcard.pergunta,
-              resposta: updatedFlashcard.resposta,
-              materiaId: subjectId
-          };
-           const response = await api.put(`/flashcards/atualizar/${updatedFlashcard.id}`, payload);
-           const saved = response.data;
+          // 🚀 Chamada simplificada ao Service
+          const saved = await FlashcardService.atualizar(
+              updatedFlashcard.id, 
+              updatedFlashcard.pergunta, 
+              updatedFlashcard.resposta, 
+              subjectId
+          );
 
           setFlashcardsData(prev => ({
             ...prev,
@@ -136,8 +128,8 @@ export function SubjectProvider({ children }) {
 
   const deleteFlashcard = async (subjectId, flashcardId) => {
      try {
-         // DELETE /flashcards/apagar/{id}
-         await api.delete(`/flashcards/apagar/${flashcardId}`);
+         // 🚀 Chamada simplificada ao Service
+         await FlashcardService.apagar(flashcardId);
          
          setFlashcardsData(prev => ({
             ...prev,

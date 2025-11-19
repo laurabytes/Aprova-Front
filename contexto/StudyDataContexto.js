@@ -1,7 +1,8 @@
-// laurabytes/aprova-front/Aprova-Front-a2673b7d96b43f3032686fb9ef44966c6caebbb4/contexto/StudyDataContexto.js
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import api from '../servicos/api'; // 👈 Importando a instância Axios
+import MetasService from '../servicos/MetasService'; // 👈 Importa o novo serviço
+import SessaoEstudoService from '../servicos/SessaoEstudoService'; // 👈 Importa o novo serviço
 
 const StudyDataContext = createContext(undefined);
 
@@ -42,13 +43,13 @@ export function StudyDataProvider({ children }) {
             const storedFocus = await AsyncStorage.getItem(FOCUS_KEY);
             if (storedFocus) setFoco(storedFocus);
 
-            // Metas (API) (GET /metas/listar)
-            const resMetas = await api.get('/metas/listar');
-            setGoals(resMetas.data);
+            // Metas (API)
+            const metas = await MetasService.listar();
+            setGoals(metas);
 
-            // Sessões Pomodoro (API) (GET /sessoes-estudo/listar)
-            const resSess = await api.get('/sessoes-estudo/listar');
-            setSessions(resSess.data);
+            // Sessões Pomodoro (API)
+            const sessoes = await SessaoEstudoService.listar();
+            setSessions(sessoes);
 
         } catch (e) { 
             console.error('Falha ao carregar dados (Metas/Sessões)', e); 
@@ -77,27 +78,26 @@ export function StudyDataProvider({ children }) {
             progresso: newGoal.progresso || 0
         };
         
-        const response = await api.post('/metas/criar', payload);
-        const saved = response.data;
+        // 🚀 Chamada simplificada ao Service
+        const saved = await MetasService.criar(payload);
         setGoals(prev => [...prev, saved]);
         
     } catch (e) { console.error("Erro ao criar meta", e); }
   };
   
   const updateGoal = async (updatedGoal) => {
-    // PUT /metas/atualizar/{id}
     try {
-        const payload = { ...updatedGoal }; // Envie o objeto completo
-        const response = await api.put(`/metas/atualizar/${updatedGoal.id}`, payload);
-        const saved = response.data;
+        const payload = { ...updatedGoal };
+        // 🚀 Chamada simplificada ao Service
+        const saved = await MetasService.atualizar(updatedGoal.id, payload);
         setGoals(prev => prev.map(g => (g.id === saved.id ? saved : g)));
     } catch(e) { console.error("Erro ao atualizar meta", e); }
   };
   
   const deleteGoal = async (id) => {
       try {
-          // DELETE /metas/apagar/{id}
-          await api.delete(`/metas/apagar/${id}`);
+          // 🚀 Chamada simplificada ao Service
+          await MetasService.apagar(id);
           setGoals(prev => prev.filter(g => g.id !== id));
       } catch (e) { console.error("Erro ao apagar meta", e); }
   };
@@ -110,8 +110,8 @@ export function StudyDataProvider({ children }) {
         // PUT /metas/atualizar/{id}
         const payload = { ...goal, status: newStatus, progresso: newProgress };
         
-        const response = await api.put(`/metas/atualizar/${goal.id}`, payload);
-        const saved = response.data;
+        // 🚀 Chamada simplificada ao Service
+        const saved = await MetasService.atualizar(goal.id, payload);
         setGoals(prev => prev.map(g => (g.id === goal.id ? saved : g)));
         
     } catch(e) { console.error("Erro toggle status meta", e); }
@@ -127,8 +127,8 @@ export function StudyDataProvider({ children }) {
             tipo: newSession.tipo, 
         };
         
-        const response = await api.post('/sessoes-estudo/criar', payload);
-        const saved = response.data;
+        // 🚀 Chamada simplificada ao Service
+        const saved = await SessaoEstudoService.criar(payload);
         setSessions(prev => [saved, ...prev]); 
         
     } catch (e) { console.error("Erro ao salvar sessão", e); }
