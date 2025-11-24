@@ -1,10 +1,10 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-
 // -------------------------------------------------------------------
 // ⚠️ CORREÇÃO CRÍTICA DA URL: A porta deve vir após o domínio.
 // Use 'http://academico3.rj.senac.br:8409/api'
 // Se estiver rodando localmente, use 'http://<SEU_IP_AQUI>:8409/api'
-const BASE_URL = 'http://academico3.rj.senac.br:8409/api';
+const BASE_URL = 'http://academico3.rj.senac.br/aprova/api';
 // -------------------------------------------------------------------
 
 const api = axios.create({
@@ -18,7 +18,8 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      const userJson = await StorageService.returnToken();
+      // const userJson = await StorageService.returnToken();
+      const userJson = await AsyncStorage.getItem('user');
       if (userJson) {
         const user = JSON.parse(userJson);
         // Se o usuário tem token, coloca no cabeçalho Authorization

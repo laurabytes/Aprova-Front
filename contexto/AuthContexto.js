@@ -44,8 +44,10 @@ export function AuthProvider({ children }) {
         id: null
       }; 
 
-      await AsyncStorage.setItem('user', JSON.stringify(userToStore));
-      setUser(userToStore); 
+      await AsyncStorage.setItem('user', JSON.stringify(userToStore)); //
+      
+      // LINHA REMOVIDA (antes: await StorageService.saveToken(data.token);)
+      setUser(userToStore);
       
     } catch (error) {
       // Tratamento de erro centralizado

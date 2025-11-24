@@ -6,10 +6,11 @@ import {
   Target,
   Timer,
   TrendingUp,
-  UserCircle, 
+  UserCircle,
 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   SafeAreaView,
   ScrollView,
@@ -18,9 +19,8 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
-  ActivityIndicator,
 } from 'react-native';
-import { LineChart } from 'react-native-chart-kit'; 
+import { LineChart } from 'react-native-chart-kit';
 import {
   Card,
   CardContent,
@@ -30,9 +30,9 @@ import {
 } from '../../componentes/Card';
 import { useAuth } from '../../contexto/AuthContexto';
 // NOVO: Importar useSubjects
-import { useSubjects } from '../../contexto/SubjectContexto'; 
+import { useSubjects } from '../../contexto/SubjectContexto';
 // NOVO: Importar useStudyData
-import { useStudyData } from '../../contexto/StudyDataContexto'; 
+import { useStudyData } from '../../contexto/StudyDataContexto';
 import { cores } from '../../tema/cores';
 
 function StatCard({ title, value, description, icon: Icon }) {
@@ -49,6 +49,7 @@ function StatCard({ title, value, description, icon: Icon }) {
         </View>
       </CardHeader>
       <CardContent>
+        {/* CORREÇÃO/CONFIRMAÇÃO: O valor numérico está corretamente dentro de <Text> */}
         <Text style={[styles.statValue, { color: theme.foreground }]}>{value}</Text>
         <Text style={[styles.statDescription, { color: theme.mutedForeground }]}>
           {description}
@@ -196,6 +197,7 @@ export default function TelaDashboard() {
       return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
             <ActivityIndicator size="large" color={theme.primary} />
+            {/* CORREÇÃO/CONFIRMAÇÃO: String está dentro de <Text> */}
             <Text style={{ color: theme.mutedForeground, marginTop: 10 }}>Carregando dados...</Text>
         </SafeAreaView>
       );
@@ -208,7 +210,9 @@ export default function TelaDashboard() {
         <View style={styles.header}>
           <View style={{ flex: 1, gap: 4 }}>
             <Text style={[styles.title, { color: theme.foreground }]}>
-              Bem-vindo, {user?.nome?.split(' ')[0] || 'Usuário'}!
+              {/* CORREÇÃO/CONFIRMAÇÃO: String estática está dentro de <Text> */}
+              <Text>Bem-vindo, </Text>
+              {user?.nome?.split(' ')[0] || 'Usuário'}!
             </Text>
             <Text style={[styles.subtitle, { color: theme.mutedForeground }]}>
               Gerencie seus estudos e alcance seus objetivos
