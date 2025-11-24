@@ -1,4 +1,4 @@
-// app/(tabs)/dashboard.jsx
+// frontend/app/(tabs)/dashboard.jsx
 
 import { useRouter } from 'expo-router';
 import {
@@ -49,7 +49,6 @@ function StatCard({ title, value, description, icon: Icon }) {
         </View>
       </CardHeader>
       <CardContent>
-        {/* CORREÇÃO/CONFIRMAÇÃO: O valor numérico está corretamente dentro de <Text> */}
         <Text style={[styles.statValue, { color: theme.foreground }]}>{value}</Text>
         <Text style={[styles.statDescription, { color: theme.mutedForeground }]}>
           {description}
@@ -99,10 +98,10 @@ function StudyMinutesChart({ studyData }) {
     return (
         <Card style={{ padding: 20 }}>
             <CardTitle style={{ color: theme.foreground, fontSize: 20, marginBottom: 8 }}>
-              Minutos de Estudo Semanal
+              <Text>Minutos de Estudo Semanal</Text>
             </CardTitle>
             <CardDescription>
-              Inicie uma sessão Pomodoro para visualizar seu desempenho semanal aqui.
+              <Text>Inicie uma sessão Pomodoro para visualizar seu desempenho semanal aqui.</Text>
             </CardDescription>
         </Card>
     );
@@ -112,10 +111,10 @@ function StudyMinutesChart({ studyData }) {
     <Card style={{ padding: 0 }}>
       <CardHeader style={{ paddingBottom: 0, paddingHorizontal: 20 }}>
         <CardTitle style={{ color: theme.foreground, fontSize: 20 }}>
-          Minutos de Estudo Semanal (Pomodoro)
+          <Text>Minutos de Estudo Semanal (Pomodoro)</Text>
         </CardTitle>
         <CardDescription>
-          Tempo de estudo acumulado em sessões de Trabalho.
+          <Text>Tempo de estudo acumulado em sessões de Trabalho.</Text>
         </CardDescription>
       </CardHeader>
       <View style={{ paddingTop: 16, alignItems: 'center' }}>
@@ -197,7 +196,6 @@ export default function TelaDashboard() {
       return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
             <ActivityIndicator size="large" color={theme.primary} />
-            {/* CORREÇÃO/CONFIRMAÇÃO: String está dentro de <Text> */}
             <Text style={{ color: theme.mutedForeground, marginTop: 10 }}>Carregando dados...</Text>
         </SafeAreaView>
       );
@@ -210,7 +208,7 @@ export default function TelaDashboard() {
         <View style={styles.header}>
           <View style={{ flex: 1, gap: 4 }}>
             <Text style={[styles.title, { color: theme.foreground }]}>
-              {/* CORREÇÃO/CONFIRMAÇÃO: String estática está dentro de <Text> */}
+              {/* CORREÇÃO APLICADA: Envelopamento da string estática */}
               <Text>Bem-vindo, </Text>
               {user?.nome?.split(' ')[0] || 'Usuário'}!
             </Text>
