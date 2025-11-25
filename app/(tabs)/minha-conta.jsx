@@ -4,7 +4,6 @@ import { User, Moon, Sun, ChevronsRight, LogOut, Target, ArrowLeft, KeyRound, Ma
 import React, { useState } from 'react';
 import {
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,10 +13,10 @@ import {
   TextInput,
   ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
 import { Card, CardContent, CardHeader, CardTitle } from '../../componentes/Card';
 import { Botao } from '../../componentes/Botao';
 import { useAuth } from '../../contexto/AuthContexto';
-// NOVO: Importar useStudyData
 import { useStudyData } from '../../contexto/StudyDataContexto'; 
 import { cores } from '../../tema/cores';
 

@@ -1,12 +1,11 @@
 // app/(tabs)/materias/index.jsx
 import { Link, useRouter } from 'expo-router';
 import { BookOpen, Edit, Plus, Shuffle, Trash2 } from 'lucide-react-native';
-import { useState } from 'react'; // Removido useEffect
+import { useState } from 'react'; 
 import {
   ActivityIndicator,
   Alert,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import {
   useColorScheme,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; 
 import ColorPicker from 'react-native-wheel-color-picker';
 import { Botao } from '../../../componentes/Botao';
 import { CampoDeTexto } from '../../../componentes/CampoDeTexto';
@@ -26,7 +26,7 @@ import {
 import { Dialog } from '../../../componentes/Dialog';
 import { Textarea } from '../../../componentes/Textarea';
 import { useAuth } from '../../../contexto/AuthContexto';
-import { useSubjects } from '../../../contexto/SubjectContexto'; // NOVO: Importar useSubjects
+import { useSubjects } from '../../../contexto/SubjectContexto'; 
 import { cores } from '../../../tema/cores';
 
 function getTextColorForBackground(hexColor) {
@@ -300,9 +300,12 @@ export default function TelaMaterias() {
           </ScrollView>
         </Dialog>
 
-        {isPageLoading && <ActivityIndicator size="large" color={theme.primary} />}
-
-        {!isPageLoading && subjects.length === 0 ? (
+        {/* LÓGICA DE RENDERIZAÇÃO CONDICIONAL CORRIGIDA */}
+        {isPageLoading ? (
+            // 1. LOADING STATE
+            <ActivityIndicator size="large" color={theme.primary} />
+        ) : subjects.length === 0 ? (
+          // 2. EMPTY STATE
           <View style={styles.emptyContainer}>
             <BookOpen color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
             <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
@@ -313,12 +316,13 @@ export default function TelaMaterias() {
             </Text>
           </View>
         ) : (
+          // 3. DATA LIST
           <View style={styles.grid}>
             {subjects.map((subject) => {
               const textColor = getTextColorForBackground(subject.cor);
               return (
                 <Link
-                  key={subject.id}
+                  key={subject.id} // Chave única
                   href={{
                     pathname: `/(tabs)/materias/${subject.id}`,
                     params: {
@@ -386,6 +390,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 16,
   },
   headerButtonsContainer: {
     flexDirection: 'row',

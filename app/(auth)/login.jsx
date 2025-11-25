@@ -4,13 +4,13 @@ import { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    SafeAreaView,
     StyleSheet,
     Text,
     TouchableOpacity,
     useColorScheme,
     View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Botao } from '../../componentes/Botao';
 import { CampoDeTexto } from '../../componentes/CampoDeTexto';
 import {

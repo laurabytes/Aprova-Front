@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,7 +12,9 @@ import {
   useColorScheme,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
 import { Botao } from '../../../componentes/Botao';
+// ...
 import { Card, CardContent, CardHeader, CardTitle } from '../../../componentes/Card';
 import { Dialog } from '../../../componentes/Dialog';
 import { Textarea } from '../../../componentes/Textarea';

@@ -6,13 +6,12 @@ import {
   Target,
   Timer,
   TrendingUp,
-  UserCircle,
+  UserCircle, // CORRIGIDO: Limpeza da linha de importação
 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +19,7 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
 import { LineChart } from 'react-native-chart-kit';
 import {
   Card,

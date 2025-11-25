@@ -5,14 +5,15 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   useColorScheme,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
 import { Botao } from '../../../componentes/Botao';
+// ...
 import { Card, CardContent, CardHeader, CardTitle } from '../../../componentes/Card';
 import { cores } from '../../../tema/cores';
 

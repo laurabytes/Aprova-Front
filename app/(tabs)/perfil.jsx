@@ -5,7 +5,6 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,9 @@ import {
   View,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
+// Importação do SegmentedControl para a seleção de dia na tela principal
+// ...
 // Importação do SegmentedControl para a seleção de dia na tela principal
 import SegmentedControl from '@react-native-segmented-control/segmented-control'; 
 import { Botao } from '../../componentes/Botao';

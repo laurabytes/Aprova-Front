@@ -1,8 +1,8 @@
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import MetasService from '../servicos/MetasService'; // 👈 Importa o novo serviço
-import SessaoEstudoService from '../servicos/SessaoEstudoService'; // 👈 Importa o novo serviço
+import { useAuth } from './AuthContexto'; // ADICIONADO
+import MetasService from '../servicos/MetasService'; 
+import SessaoEstudoService from '../servicos/SessaoEstudoService'; 
 
 const StudyDataContext = createContext(undefined);
 
@@ -30,16 +30,28 @@ const getDailyStudyMinutes = (sessions) => {
 };
 
 export function StudyDataProvider({ children }) {
+  const { user, isLoading: isAuthLoading } = useAuth(); // ADICIONADO
   const [foco, setFoco] = useState('');
   const [goals, setGoals] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. CARREGAMENTO (API + AsyncStorage para Foco)
+  // 1. CARREGAMENTO (API + AsyncStorage para Foco) - AGORA DEPENDE DO USER
   useEffect(() => {
+    // CORRIGIDO: Só carrega se user existir e autenticação não estiver em loading
+    if (!user || isAuthLoading) { 
+        setFoco('');
+        setGoals([]);
+        setSessions([]);
+        setIsLoading(false); 
+        return;
+    }
+      
     const loadData = async () => {
         try {
-            // Foco (Local)
+            setIsLoading(true); // Reinicia o loading quando o user muda para autenticado
+            
+            // Foco (Local) 
             const storedFocus = await AsyncStorage.getItem(FOCUS_KEY);
             if (storedFocus) setFoco(storedFocus);
 
@@ -52,18 +64,19 @@ export function StudyDataProvider({ children }) {
             setSessions(sessoes);
 
         } catch (e) { 
-            console.error('Falha ao carregar dados (Metas/Sessões)', e); 
+            console.error('Falha ao carregar dados (Metas/Sessões) [AxiosError: Request failed with status code 403]', e); 
         } finally { 
             setIsLoading(false); 
         }
     };
     loadData();
-  }, []);
+  }, [user, isAuthLoading]); // DEPENDÊNCIAS CORRIGIDAS
 
   // Salvar Foco (Local - Mantido)
   useEffect(() => {
-    if (!isLoading) AsyncStorage.setItem(FOCUS_KEY, foco).catch(console.error);
-  }, [foco, isLoading]);
+    // Se o user estiver logado e não estiver carregando, salva o foco
+    if (user && !isLoading) AsyncStorage.setItem(FOCUS_KEY, foco).catch(console.error);
+  }, [foco, isLoading, user]); // DEPENDÊNCIA USER ADICIONADA
 
   // --- AÇÕES DE FOCO (Local) ---
   const updateFoco = (newFoco) => setFoco(newFoco);

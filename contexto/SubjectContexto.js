@@ -1,8 +1,9 @@
 // laurabytes/aprova-front/Aprova-Front-a2673b7d96b43f3032686fb9ef44966c6caebbb4/contexto/SubjectContexto.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import MateriaService from '../servicos/MateriaService'; // 👈 Importa o novo serviço
-import FlashcardService from '../servicos/FlashcardService'; // 👈 Importa o novo serviço
+import { useAuth } from './AuthContexto'; 
+import MateriaService from '../servicos/MateriaService'; 
+import FlashcardService from '../servicos/FlashcardService'; 
 
 const SubjectContext = createContext(undefined);
 
@@ -15,14 +16,24 @@ export function useSubjects() {
 }
 
 export function SubjectProvider({ children }) {
+  const { user, isLoading: isAuthLoading } = useAuth(); 
   const [subjects, setSubjects] = useState([]);
   const [flashcardsData, setFlashcardsData] = useState({}); 
   const [isLoading, setIsLoading] = useState(true);
 
   // 1. Carregar Dados da API
   useEffect(() => {
+    // CORRIGIDO: Só carrega se user existir e autenticação não estiver em loading
+    if (!user || isAuthLoading) { 
+        setSubjects([]);
+        setFlashcardsData({});
+        setIsLoading(false); 
+        return; 
+    }
+    
     const loadData = async () => {
       try {
+        setIsLoading(true); // Reinicia o loading quando o user muda para autenticado
         
         // A. Busca as Matérias
         const materias = await MateriaService.listar();
@@ -47,13 +58,13 @@ export function SubjectProvider({ children }) {
         }
 
       } catch (e) {
-        console.error('Falha ao carregar dados de estudo da API', e);
+        console.error('Falha ao carregar dados de estudo da API [AxiosError: Request failed with status code 403]', e); 
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
-  }, []);
+  }, [user, isAuthLoading]); // DEPENDÊNCIAS CORRIGIDAS
 
   // --- MATÉRIAS (CRUD) ---
 

@@ -1,10 +1,8 @@
-
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
@@ -12,6 +10,7 @@ import {
     useColorScheme,
     View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
 import { Botao } from '../../componentes/Botao';
 import { CampoDeTexto } from '../../componentes/CampoDeTexto';
 import {

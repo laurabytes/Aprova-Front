@@ -1,12 +1,11 @@
 // app/(tabs)/objetivos.jsx
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { CheckCircle2, Circle, Edit, Plus, Target, Trash2 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react'; 
 import {
   ActivityIndicator,
   Alert,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,8 +13,9 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
+import { SafeAreaView } from 'react-native-safe-area-context'; // CORREÇÃO PARA TIRAR O WARNING
 
+import Slider from '@react-native-community/slider';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 
 import { Badge } from '../../componentes/Badge';
@@ -287,7 +287,7 @@ export default function TelaMetas() {
                 <DateTimePicker
                   value={tempDate}
                   mode="date"
-                  display={Platform.OS === 'android' ? 'default' : 'inline'}
+                  display={Platform.OS === 'android' ? 'default' : 'spinner'}
                   onChange={onDateChange}
                   style={{ marginBottom: 16 }}
                 />
@@ -385,8 +385,9 @@ export default function TelaMetas() {
             {activeGoals.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Em Andamento</Text>
+                {/* CORRIGIDO: Usa String(goal.id) para garantir que a chave (key) seja válida */}
                 {activeGoals.map((goal) => (
-                  <Card key={goal.id} style={styles.card}>
+                  <Card key={String(goal.id)} style={styles.card}>
                     <CardHeader>
                       <View style={styles.cardTitleRow}>
                         <CardTitle style={{ flex: 1, color: theme.foreground }}>{goal.titulo}</CardTitle>
@@ -445,8 +446,9 @@ export default function TelaMetas() {
             {completedGoals.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Concluídos</Text>
+                {/* CORRIGIDO: Usa String(goal.id) para garantir que a chave (key) seja válida */}
                 {completedGoals.map((goal) => (
-                  <Card key={goal.id} style={styles.card}>
+                  <Card key={String(goal.id)} style={styles.card}>
                     <CardHeader>
                       <View style={styles.cardTitleRow}>
                         <CardTitle style={{ flex: 1, color: theme.foreground }}>{goal.titulo}</CardTitle>

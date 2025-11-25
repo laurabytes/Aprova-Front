@@ -3,14 +3,14 @@
 // 1. IMPORTAR GESTURE HANDLER NO TOPO
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler'; 
+import { SafeAreaView } from 'react-native-safe-area-context'; 
 
 import { Redirect, Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, SafeAreaView, StyleSheet, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, useColorScheme, View, Text } from 'react-native';
 import { AuthProvider, useAuth } from '../contexto/AuthContexto';
 import { cores } from '../tema/cores'; 
 import { SubjectProvider } from '../contexto/SubjectContexto'; 
-// NOVO: Importar StudyDataProvider
 import { StudyDataProvider } from '../contexto/StudyDataContexto'; 
 
 function LayoutInicial() {
@@ -35,6 +35,7 @@ function LayoutInicial() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
             <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={{ color: theme.mutedForeground, marginTop: 10 }}>Carregando dados...</Text>
         </SafeAreaView>
     );
   }

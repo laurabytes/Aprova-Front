@@ -3,7 +3,6 @@ import { Coffee, Pause, Play, RotateCcw, Timer } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,7 +10,9 @@ import {
   View,
   ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
 import { Botao } from '../../componentes/Botao';
+// ...
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../componentes/Card';
 import { Progress } from '../../componentes/Progress';
 import { Select, SelectItem } from '../../componentes/Select';
