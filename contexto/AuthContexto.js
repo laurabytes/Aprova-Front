@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import UsuarioService from '../servicos/UsuarioService'; // 👈 Importa o novo serviço
+import UsuarioService from '../servicos/UsuarioService'; 
 
 const AuthContext = createContext(undefined);
 
@@ -37,16 +37,16 @@ export function AuthProvider({ children }) {
       // 🚀 Chamada simplificada ao Service
       const data = await UsuarioService.login(email, password);
       
+      // 💡 CORREÇÃO: Assume que a API retorna id e nome (ou usa fallbacks)
       const userToStore = { 
         email: email, 
         token: data.token, 
-        nome: 'Usuário', 
-        id: null
+        nome: data.nome || 'Usuário', 
+        id: data.id || null
       }; 
 
-      await AsyncStorage.setItem('user', JSON.stringify(userToStore)); //
+      await AsyncStorage.setItem('user', JSON.stringify(userToStore));
       
-      // LINHA REMOVIDA (antes: await StorageService.saveToken(data.token);)
       setUser(userToStore);
       
     } catch (error) {

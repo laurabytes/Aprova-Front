@@ -70,18 +70,40 @@ export function SubjectProvider({ children }) {
 
   const addSubject = async (newSubject) => {
     try {
-        // 🚀 Chamada simplificada ao Service
-        const savedSubject = await MateriaService.criar(newSubject.nome);
-        setSubjects(prev => [...prev, savedSubject]);
-    } catch (e) { console.error("Erro ao criar matéria", e); }
+        // 🚀 CORREÇÃO: Passa o objeto completo para o service
+        const savedSubjectPartial = await MateriaService.criar(newSubject);
+        
+        // Combina o objeto retornado (id, nome) com os dados locais (descricao, cor) antes de salvar no estado
+        const savedSubjectFull = { 
+            ...newSubject, 
+            ...savedSubjectPartial, 
+            id: savedSubjectPartial.id, 
+        };
+
+        setSubjects(prev => [...prev, savedSubjectFull]);
+    } catch (e) { 
+        console.error("Erro ao criar matéria", e); 
+        throw e; 
+    }
   };
 
   const updateSubject = async (updatedSubject) => {
     try {
-        // 🚀 Chamada simplificada ao Service
-        const saved = await MateriaService.atualizar(updatedSubject.id, updatedSubject.nome);
-        setSubjects(prev => prev.map(s => (s.id === saved.id ? saved : s)));
-    } catch (e) { console.error("Erro ao atualizar matéria", e); }
+        // 🚀 CORREÇÃO: Passa o objeto completo para o service
+        const savedPartial = await MateriaService.atualizar(updatedSubject.id, updatedSubject);
+        
+        // Combina o objeto retornado com os dados locais antes de salvar no estado
+        const savedFull = {
+            ...updatedSubject, 
+            ...savedPartial, 
+            id: savedPartial.id || updatedSubject.id,
+        };
+
+        setSubjects(prev => prev.map(s => (s.id === savedFull.id ? savedFull : s)));
+    } catch (e) { 
+        console.error("Erro ao atualizar matéria", e); 
+        throw e; 
+    }
   };
 
   const deleteSubject = async (id) => {

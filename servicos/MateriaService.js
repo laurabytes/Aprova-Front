@@ -8,15 +8,15 @@ const MateriaService = {
     },
 
     // POST /api/materias/criar
-    criar: async (nome) => {
-        // Envia o DTO MateriaDTORequest
+    // 💡 CORREÇÃO: Recebe o objeto completo e envia APENAS o 'nome'.
+    criar: async ({ nome }) => { 
         const response = await api.post('/materias/criar', { nome });
-        return response.data; // Retorna MateriaDTOResponse
+        return response.data; // Retorna MateriaDTOResponse (espera-se: { id, nome })
     },
 
     // PUT /api/materias/atualizar/{id}
-    atualizar: async (id, nome) => {
-        // Envia o DTO MateriaDTORequest
+    // 💡 CORREÇÃO: Recebe o objeto completo e envia APENAS o 'nome'.
+    atualizar: async (id, { nome }) => { 
         const response = await api.put(`/materias/atualizar/${id}`, { nome });
         return response.data; // Retorna MateriaDTOResponse
     },

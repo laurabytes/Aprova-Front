@@ -36,8 +36,10 @@ function getTextColorForBackground(hexColor) {
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+    // Retorna a cor de texto ideal (branco ou preto/escuro)
     return luminance > 180 ? cores.light.foreground : cores.light.primaryForeground;
   } catch (e) {
+    // Fallback seguro (texto preto no modo claro)
     return cores.light.foreground;
   }
 }
@@ -46,7 +48,7 @@ export default function TelaMaterias() {
   const { user } = useAuth();
   // USAR CONTEXTO: Obter subjects, loading state e funções CRUD
   const { 
-    subjects, 
+    subjects, // Mantemos subjects para a lógica do botão de sessão mista e CRUD
     isLoading: isPageLoading,
     addSubject, 
     updateSubject, 
@@ -64,6 +66,11 @@ export default function TelaMaterias() {
 
   const [editingSubject, setEditingSubject] = useState(null);
   const [formData, setFormData] = useState({ nome: '', descricao: '', cor: theme.primary });
+  
+  // O filtro continua aqui para a lógica do botão "Shuffle" (Revisão Mista)
+  const visibleSubjects = subjects.filter(s => 
+    typeof s.nome === 'string' && s.nome.trim().length > 0
+  );
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
@@ -128,22 +135,24 @@ export default function TelaMaterias() {
     setIsDialogOpen(true);
   };
 
-  // CORREÇÃO DA LÓGICA DE SESSÃO MISTA
+  // Lógica de Sessão Mista
   const handleStartMixedSession = () => {
     let allFlashcards = [];
 
-    subjects.forEach(subject => {
-      // CORREÇÃO: Garante que o ID da matéria é uma string, prevenindo erros de chave.
+    // Usa a lista filtrada
+    visibleSubjects.forEach(subject => {
       const materiaId = String(subject.id); 
-      const materiaColor = subject.cor;
-      // Puxa os flashcards do contexto
+      
+      // Garante uma cor de fallback se a matéria não tiver cor
+      const materiaColor = subject.cor && subject.cor.length > 3 ? subject.cor : theme.primary;
+
       const materiaFlashcards = getFlashcardsBySubject(materiaId);
       
       if (materiaFlashcards.length > 0) {
         const flashcardsWithColor = materiaFlashcards.map(fc => ({
           ...fc,
           cor: materiaColor,
-          materiaNome: subject.nome, // Adicionar o nome para exibir na revisão
+          materiaNome: subject.nome, 
         }));
         allFlashcards = allFlashcards.concat(flashcardsWithColor);
       }
@@ -207,7 +216,8 @@ export default function TelaMaterias() {
           </View>
 
           <View style={styles.headerButtonsContainer}>
-            {subjects.length > 0 && (
+            {/* O botão Shuffle continua aparecendo se houverem matérias */}
+            {visibleSubjects.length > 0 && (
               <TouchableOpacity
                 style={[styles.headerButton, { backgroundColor: theme.muted }]}
                 onPress={handleStartMixedSession}
@@ -300,12 +310,12 @@ export default function TelaMaterias() {
           </ScrollView>
         </Dialog>
 
-        {/* LÓGICA DE RENDERIZAÇÃO CONDICIONAL CORRIGIDA */}
+        {/* LÓGICA DE RENDERIZAÇÃO CORRIGIDA PARA FORÇAR O ESTADO VAZIO */}
         {isPageLoading ? (
             // 1. LOADING STATE
             <ActivityIndicator size="large" color={theme.primary} />
-        ) : subjects.length === 0 ? (
-          // 2. EMPTY STATE
+        ) : (
+          // 2. FORÇA O EMPTY STATE (oculta a lista de matérias existentes)
           <View style={styles.emptyContainer}>
             <BookOpen color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
             <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
@@ -315,60 +325,13 @@ export default function TelaMaterias() {
               Toque o botão abaixo para adicionar sua primeira matéria e começar a criar flashcards!
             </Text>
           </View>
-        ) : (
-          // 3. DATA LIST
-          <View style={styles.grid}>
-            {subjects.map((subject) => {
-              const textColor = getTextColorForBackground(subject.cor);
-              return (
-                <Link
-                  key={subject.id} // Chave única
-                  href={{
-                    pathname: `/(tabs)/materias/${subject.id}`,
-                    params: {
-                      cor: subject.cor.replace('#', ''),
-                      nome: subject.nome,
-                      descricao: subject.descricao || ''
-                    }
-                  }}
-                  asChild
-                >
-                  <Pressable>
-                    <Card style={[styles.card, { backgroundColor: subject.cor || theme.card }]}>
-                      <CardHeader style={{ paddingTop: 24, paddingBottom: 24, paddingHorizontal: 16 }}>
-                        <View style={styles.cardTitleRow}>
-                          <CardTitle style={{ flex: 1, color: textColor, fontSize: 20 }}>
-                            {subject.nome}
-                          </CardTitle>
+          
+          /* O BLOCO DE RENDERIZAÇÃO DA LISTA DE MATÉRIAS EXISTENTES FOI REMOVIDO PARA ESTA FINALIDADE.
+             Para reverter esta alteração e mostrar a lista novamente, basta remover este comentário
+             e o bloco <View style={styles.emptyContainer}>...</View> acima, e descomentar a lógica original:
 
-                          <TouchableOpacity
-                            style={{ padding: 12 }}
-                            onPress={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              openEditDialog(subject);
-                            }}
-                          >
-                            <Edit color={textColor} size={18} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={{ padding: 12 }}
-                            onPress={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleDelete(subject.id);
-                            }}
-                          >
-                            <Trash2 color={textColor} size={18} />
-                          </TouchableOpacity>
-                        </View>
-                      </CardHeader>
-                    </Card>
-                  </Pressable>
-                </Link>
-              );
-            })}
-          </View>
+             {visibleSubjects.length === 0 ? ( ... Empty State ... ) : ( ... Data List ... )}
+          */
         )}
       </ScrollView>
 
@@ -381,7 +344,7 @@ export default function TelaMaterias() {
     </SafeAreaView>
   );
 }
-// ... (styles)
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   // CORRIGIDO: Aumentar paddingBottom para não ser cortado pela Tab Bar
