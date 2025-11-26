@@ -4,7 +4,7 @@ import axios from 'axios';
 // ⚠️ CORREÇÃO CRÍTICA DA URL: A porta deve vir após o domínio.
 // Use 'http://academico3.rj.senac.br:8409/api'
 // Se estiver rodando localmente, use 'http://<SEU_IP_AQUI>:8409/api'
-const BASE_URL = 'http://academico3.rj.senac.br/aprova/api';
+const BASE_URL = 'http://10.136.36.194:8409/api'; // Corrigido para o IP local do utilizador para testes
 // -------------------------------------------------------------------
 
 const api = axios.create({
