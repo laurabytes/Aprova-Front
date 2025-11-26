@@ -128,7 +128,6 @@ export function SubjectProvider({ children }) {
 
   const addFlashcard = async (subjectId, newFlashcard) => {
     try {
-        // 🚀 Chamada simplificada ao Service
         const savedCard = await FlashcardService.criar(
             newFlashcard.pergunta, 
             newFlashcard.resposta, 
@@ -139,12 +138,14 @@ export function SubjectProvider({ children }) {
             ...prev,
             [subjectId]: [...(prev[subjectId] || []), savedCard],
         }));
-    } catch (e) { console.error("Erro ao criar flashcard", e); }
+    } catch (e) { 
+        console.error("Erro ao criar flashcard", e); 
+        throw e; // <--- ADICIONE ISSO (Relança o erro para a tela tratar)
+    }
   };
 
   const updateFlashcard = async (subjectId, updatedFlashcard) => {
       try {
-          // 🚀 Chamada simplificada ao Service
           const saved = await FlashcardService.atualizar(
               updatedFlashcard.id, 
               updatedFlashcard.pergunta, 
@@ -156,19 +157,24 @@ export function SubjectProvider({ children }) {
             ...prev,
             [subjectId]: (prev[subjectId] || []).map(f => f.id === saved.id ? saved : f),
           }));
-      } catch(e) { console.error("Erro update flashcard", e); }
+      } catch(e) { 
+          console.error("Erro update flashcard", e);
+          throw e; // <--- ADICIONE ISSO
+      }
   };
 
   const deleteFlashcard = async (subjectId, flashcardId) => {
      try {
-         // 🚀 Chamada simplificada ao Service
          await FlashcardService.apagar(flashcardId);
          
          setFlashcardsData(prev => ({
             ...prev,
             [subjectId]: (prev[subjectId] || []).filter(f => f.id !== flashcardId),
          }));
-     } catch (e) { console.error("Erro delete flashcard", e); }
+     } catch (e) { 
+         console.error("Erro delete flashcard", e);
+         // throw e; // (Opcional no delete, mas recomendado se quiser avisar o usuário)
+     }
   };
   
   const value = {

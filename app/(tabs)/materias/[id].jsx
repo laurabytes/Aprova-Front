@@ -92,21 +92,27 @@ export default function TelaFlashcards() {
     }
       
     setIsLoading(true);
-    await new Promise(res => setTimeout(res, 300)); 
+    // await new Promise(res => setTimeout(res, 300)); // (Opcional: removi o delay artificial para ficar mais rápido)
+    
     try {
       if (editingFlashcard) {
-        updateFlashcard(subjectId, { ...editingFlashcard, ...formData });
+        // CORREÇÃO: Adicionado 'await' para esperar a atualização terminar
+        await updateFlashcard(subjectId, { ...editingFlashcard, ...formData });
       } else {
         const newFlashcard = {
           ...formData,
-          id: Date.now().toString(), // Usando string ID para consistência
+          id: Date.now().toString(),
           materiaId: subjectId,
         };
-        addFlashcard(subjectId, newFlashcard);
+        // CORREÇÃO: Adicionado 'await' para esperar a criação terminar
+        await addFlashcard(subjectId, newFlashcard);
       }
+      
+      // Só fecha e limpa se der tudo certo (passar pelo await sem erro)
       setIsDialogOpen(false);
       setFormData({ pergunta: '', resposta: '' });
       setEditingFlashcard(null);
+      
     } catch (error) {
       console.error(error);
       Alert.alert('Erro', 'Não foi possível salvar o flashcard.');

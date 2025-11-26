@@ -1,7 +1,7 @@
 import api from './api'; 
 
 const MetasService = {
-    // GET /api/metas/listar
+    // GET /metas/listar
     listar: async () => {
         const response = await api.get('/metas/listar');
         return response.data; // Retorna List<MetasDTOResponse>
