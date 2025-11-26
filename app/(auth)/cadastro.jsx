@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
     ActivityIndicator,
@@ -25,6 +25,7 @@ import { useAuth } from '../../contexto/AuthContexto';
 import { cores } from '../../tema/cores';
 
 export default function Cadastro() {
+  const router = useRouter();
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? cores.dark : cores.light;
   const { register } = useAuth();
@@ -52,6 +53,7 @@ export default function Cadastro() {
     setIsLoading(true);
     try {
       await register(nome, email, senha);
+      router.replace('/(auth)/login');
     } catch (err) {
       Alert.alert('Erro', err.message || 'Erro ao criar conta. Tente novamente.');
     } finally {

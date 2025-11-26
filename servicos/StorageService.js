@@ -4,7 +4,7 @@ const StorageService = {
     async returnToken(){
         try{
             // A chave que você usa é "@Storage: userToken"
-            return await AsyncStorage.getItem("@Storage: userToken");
+            return await AsyncStorage.getItem("@Storage: token");
         }catch(error){
             console.error("StorageService: erro ao retornar o TOKEN", error);
             return null;

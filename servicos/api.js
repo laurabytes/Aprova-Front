@@ -1,11 +1,9 @@
+// servicos/api.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-// -------------------------------------------------------------------
-// ⚠️ CORREÇÃO CRÍTICA DA URL: A porta deve vir após o domínio.
-// Use 'http://academico3.rj.senac.br:8409/api'
-// Se estiver rodando localmente, use 'http://<SEU_IP_AQUI>:8409/api'
-const BASE_URL = 'http://10.136.36.194:8409/api'; // Corrigido para o IP local do utilizador para testes
-// -------------------------------------------------------------------
+
+// Verifique se este IP é acessível do seu dispositivo
+const BASE_URL = 'http://10.136.36.194:8409/api'; 
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -18,14 +16,21 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      // const userJson = await StorageService.returnToken();
+      // Busca o objeto 'user' salvo pelo AuthContext
       const userJson = await AsyncStorage.getItem('user');
+      
       if (userJson) {
         const user = JSON.parse(userJson);
-        // Se o usuário tem token, coloca no cabeçalho Authorization
-        if (user.token) {
+        
+        if (user && user.token) {
+          // Adiciona o token Bearer
           config.headers.Authorization = `Bearer ${user.token}`;
+          // console.log(`[API] Token anexado para: ${config.url}`); // Descomente para debugar
+        } else {
+          console.warn(`[API] Usuário encontrado, mas sem token para: ${config.url}`);
         }
+      } else {
+         // console.log(`[API] Nenhum usuário logado. Requisição sem token para: ${config.url}`);
       }
     } catch (error) {
       console.error('Erro ao buscar token no storage', error);

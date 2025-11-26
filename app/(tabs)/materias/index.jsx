@@ -1,20 +1,22 @@
 // app/(tabs)/materias/index.jsx
-import { Link, useRouter } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { BookOpen, Edit, Plus, Shuffle, Trash2 } from 'lucide-react-native';
-import { useState } from 'react'; 
+import { useState, useCallback } from 'react'; 
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   useColorScheme,
-  View
+  View,
+  Pressable
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'; 
 import ColorPicker from 'react-native-wheel-color-picker';
+
+// Componentes
 import { Botao } from '../../../componentes/Botao';
 import { CampoDeTexto } from '../../../componentes/CampoDeTexto';
 import {
@@ -25,8 +27,11 @@ import {
 } from '../../../componentes/Card';
 import { Dialog } from '../../../componentes/Dialog';
 import { Textarea } from '../../../componentes/Textarea';
+
+// Contextos e Serviços
 import { useAuth } from '../../../contexto/AuthContexto';
 import { useSubjects } from '../../../contexto/SubjectContexto'; 
+import MateriaService from '../../../servicos/MateriaService'; // <--- IMPORTAÇÃO DO SERVIÇO
 import { cores } from '../../../tema/cores';
 
 function getTextColorForBackground(hexColor) {
@@ -36,40 +41,52 @@ function getTextColorForBackground(hexColor) {
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-    // Retorna a cor de texto ideal (branco ou preto/escuro)
     return luminance > 180 ? cores.light.foreground : cores.light.primaryForeground;
   } catch (e) {
-    // Fallback seguro (texto preto no modo claro)
     return cores.light.foreground;
   }
 }
 
 export default function TelaMaterias() {
   const { user } = useAuth();
-  // USAR CONTEXTO: Obter subjects, loading state e funções CRUD
-  const { 
-    subjects, // Mantemos subjects para a lógica do botão de sessão mista e CRUD
-    isLoading: isPageLoading,
-    addSubject, 
-    updateSubject, 
-    deleteSubject,
-    getFlashcardsBySubject,
-  } = useSubjects();
+  // Mantemos o contexto caso você use 'getFlashcardsBySubject' em outras partes, 
+  // mas vamos gerenciar a lista principal via API aqui.
+  const { getFlashcardsBySubject } = useSubjects();
   
   const router = useRouter();
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
-  const [isLoading, setIsLoading] = useState(false);
+  // Estado local para as matérias vindas da API
+  const [subjects, setSubjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(false); // Loading de ações (salvar/deletar)
+  const [isPageLoading, setIsPageLoading] = useState(true); // Loading inicial da página
+
+  // Estados do Modal
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
-
   const [editingSubject, setEditingSubject] = useState(null);
   const [formData, setFormData] = useState({ nome: '', descricao: '', cor: theme.primary });
-  
-  // O filtro continua aqui para a lógica do botão "Shuffle" (Revisão Mista)
-  const visibleSubjects = subjects.filter(s => 
-    typeof s.nome === 'string' && s.nome.trim().length > 0
+
+  // --- FUNÇÃO PARA CARREGAR MATÉRIAS DA API ---
+  const loadMaterias = async () => {
+    try {
+      setIsPageLoading(true);
+      const data = await MateriaService.listar();
+      setSubjects(data || []);
+    } catch (error) {
+      console.error("Erro ao listar matérias:", error);
+      Alert.alert('Erro', 'Não foi possível carregar as matérias.');
+    } finally {
+      setIsPageLoading(false);
+    }
+  };
+
+  // Carrega os dados toda vez que a tela ganha foco
+  useFocusEffect(
+    useCallback(() => {
+      loadMaterias();
+    }, [])
   );
 
   const handleCloseDialog = () => {
@@ -79,6 +96,7 @@ export default function TelaMaterias() {
     setFormData({ nome: '', descricao: '', cor: theme.primary });
   };
 
+  // --- SUBMIT COM MATERIASERVICE ---
   const handleSubmit = async () => {
     if (formData.nome.trim() === '') {
       Alert.alert('Campo Obrigatório', 'Por favor, preencha o nome da matéria.');
@@ -86,28 +104,39 @@ export default function TelaMaterias() {
     }
 
     setIsLoading(true);
-    await new Promise(res => setTimeout(res, 300));
 
     try {
+      // Prepara o objeto payload. 
+      // Nota: Seu MateriaService atual só envia 'nome' no corpo da requisição, 
+      // mas estamos passando tudo caso você atualize o serviço depois.
+      const payload = {
+        nome: formData.nome,
+        descricao: formData.descricao, // O backend precisa estar pronto para receber isso
+        cor: formData.cor,
+        usuarioId: user.id // O backend precisa estar pronto para receber isso
+      };
+
+      console.log(payload);
+
+
       if (editingSubject) {
-        updateSubject({ ...editingSubject, nome: formData.nome, descricao: formData.descricao, cor: formData.cor });
+        await MateriaService.atualizar(editingSubject.id, payload);
       } else {
-        const newSubject = {
-          ...formData,
-          id: Date.now().toString(), // Usando string ID para consistência
-          usuarioId: user?.id || 'guest',
-          cor: formData.cor,
-        };
-        addSubject(newSubject);
+        await MateriaService.criar(payload);
       }
+      
+      // Recarrega a lista após sucesso
+      await loadMaterias();
       handleCloseDialog();
     } catch (error) {
+      console.error(error);
       Alert.alert('Erro', 'Não foi possível salvar a matéria.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // --- DELETE COM MATERIASERVICE ---
   const handleDelete = async (id) => {
     Alert.alert('Excluir Matéria', 'Tem certeza que deseja excluir? Isso excluirá todos os flashcards associados.', [
       { text: 'Cancelar', style: 'cancel' },
@@ -115,7 +144,15 @@ export default function TelaMaterias() {
         text: 'Excluir',
         style: 'destructive',
         onPress: async () => {
-          deleteSubject(id);
+          try {
+            setIsLoading(true);
+            await MateriaService.apagar(id);
+            await loadMaterias(); // Recarrega lista
+          } catch (error) {
+            Alert.alert('Erro', 'Falha ao excluir matéria.');
+          } finally {
+            setIsLoading(false);
+          }
         },
       },
     ]);
@@ -123,7 +160,11 @@ export default function TelaMaterias() {
 
   const openEditDialog = (subject) => {
     setEditingSubject(subject);
-    setFormData({ nome: subject.nome, descricao: subject.descricao, cor: subject.cor });
+    setFormData({ 
+      nome: subject.nome, 
+      descricao: subject.descricao || '', 
+      cor: subject.cor || theme.primary 
+    });
     setShowColorPicker(false);
     setIsDialogOpen(true);
   };
@@ -135,20 +176,20 @@ export default function TelaMaterias() {
     setIsDialogOpen(true);
   };
 
-  // Lógica de Sessão Mista
+  // Lógica de Sessão Mista (Adaptada para usar o estado local 'subjects')
   const handleStartMixedSession = () => {
     let allFlashcards = [];
 
-    // Usa a lista filtrada
-    visibleSubjects.forEach(subject => {
+    subjects.forEach(subject => {
       const materiaId = String(subject.id); 
-      
-      // Garante uma cor de fallback se a matéria não tiver cor
+      // Fallback de cor
       const materiaColor = subject.cor && subject.cor.length > 3 ? subject.cor : theme.primary;
-
+      
+      // Nota: getFlashcardsBySubject ainda depende do Contexto. 
+      // Idealmente, você buscaria flashcards via API também, mas mantivemos a lógica híbrida para não quebrar tudo.
       const materiaFlashcards = getFlashcardsBySubject(materiaId);
       
-      if (materiaFlashcards.length > 0) {
+      if (materiaFlashcards && materiaFlashcards.length > 0) {
         const flashcardsWithColor = materiaFlashcards.map(fc => ({
           ...fc,
           cor: materiaColor,
@@ -159,22 +200,19 @@ export default function TelaMaterias() {
     });
 
     if (allFlashcards.length === 0) {
-      Alert.alert('Sessão Mista', 'Nenhum flashcard encontrado nas suas matérias cadastradas.');
+      Alert.alert('Sessão Mista', 'Nenhum flashcard encontrado nas suas matérias (verifique se o contexto de flashcards está atualizado).');
       return;
     }
 
-    // Embaralhar o array
+    // Embaralhar
     for (let i = allFlashcards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [allFlashcards[i], allFlashcards[j]] = [allFlashcards[j], allFlashcards[i]];
     }
 
-    // Navegar para a tela de revisão
     router.push({
       pathname: '/(tabs)/materias/revisao',
-      params: {
-        deck: JSON.stringify(allFlashcards),
-      },
+      params: { deck: JSON.stringify(allFlashcards) },
     });
   };
 
@@ -216,8 +254,7 @@ export default function TelaMaterias() {
           </View>
 
           <View style={styles.headerButtonsContainer}>
-            {/* O botão Shuffle continua aparecendo se houverem matérias */}
-            {visibleSubjects.length > 0 && (
+            {subjects.length > 0 && (
               <TouchableOpacity
                 style={[styles.headerButton, { backgroundColor: theme.muted }]}
                 onPress={handleStartMixedSession}
@@ -228,6 +265,7 @@ export default function TelaMaterias() {
           </View>
         </View>
 
+        {/* DIALOGO DE CRIAÇÃO/EDIÇÃO */}
         <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
@@ -251,7 +289,7 @@ export default function TelaMaterias() {
                 <Textarea
                   value={formData.descricao}
                   onChangeText={(t) => setFormData({ ...formData, descricao: t })}
-                  placeholder="Descreva a matéria"
+                  placeholder="Descreva a matéria (opcional)"
                 />
               </View>
 
@@ -310,28 +348,75 @@ export default function TelaMaterias() {
           </ScrollView>
         </Dialog>
 
-        {/* LÓGICA DE RENDERIZAÇÃO CORRIGIDA PARA FORÇAR O ESTADO VAZIO */}
+        {/* LISTA DE MATÉRIAS OU EMPTY STATE */}
         {isPageLoading ? (
-            // 1. LOADING STATE
-            <ActivityIndicator size="large" color={theme.primary} />
-        ) : (
-          // 2. FORÇA O EMPTY STATE (oculta a lista de matérias existentes)
+            <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
+        ) : subjects.length === 0 ? (
+          // EMPTY STATE
           <View style={styles.emptyContainer}>
             <BookOpen color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
             <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
               Nenhuma matéria cadastrada
             </Text>
             <Text style={[styles.emptyText, { color: theme.mutedForeground }]}>
-              Toque o botão abaixo para adicionar sua primeira matéria e começar a criar flashcards!
+              Toque o botão abaixo para adicionar sua primeira matéria.
             </Text>
           </View>
-          
-          /* O BLOCO DE RENDERIZAÇÃO DA LISTA DE MATÉRIAS EXISTENTES FOI REMOVIDO PARA ESTA FINALIDADE.
-             Para reverter esta alteração e mostrar a lista novamente, basta remover este comentário
-             e o bloco <View style={styles.emptyContainer}>...</View> acima, e descomentar a lógica original:
-
-             {visibleSubjects.length === 0 ? ( ... Empty State ... ) : ( ... Data List ... )}
-          */
+        ) : (
+          // LISTA DE CARDS (Restaurada e conectada ao array subjects)
+          <View style={styles.grid}>
+            {subjects.map((subject) => {
+               // Garante cor válida
+               const cardColor = subject.cor || theme.card; 
+               const textColor = getTextColorForBackground(cardColor === theme.card ? '#FFFFFF' : cardColor);
+               
+               return (
+                <Link 
+                  key={subject.id} 
+                  href={`/(tabs)/materias/${subject.id}`} 
+                  asChild
+                >
+                  <Pressable>
+                    <Card style={[styles.card, { borderLeftColor: cardColor, borderLeftWidth: 6 }]}>
+                      <CardHeader>
+                        <View style={styles.cardTitleRow}>
+                          <CardTitle style={{ color: theme.foreground }}>
+                            {subject.nome}
+                          </CardTitle>
+                          
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <TouchableOpacity 
+                              onPress={(e) => {
+                                e.stopPropagation(); // Evita navegar ao clicar em editar
+                                openEditDialog(subject);
+                              }}
+                              style={{ padding: 4 }}
+                            >
+                              <Edit size={18} color={theme.mutedForeground} />
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                              onPress={(e) => {
+                                e.stopPropagation(); // Evita navegar ao clicar em deletar
+                                handleDelete(subject.id);
+                              }}
+                              style={{ padding: 4 }}
+                            >
+                              <Trash2 size={18} color={theme.destructive} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                        {subject.descricao ? (
+                          <CardDescription numberOfLines={2}>
+                            {subject.descricao}
+                          </CardDescription>
+                        ) : null}
+                      </CardHeader>
+                    </Card>
+                  </Pressable>
+                </Link>
+              );
+            })}
+          </View>
         )}
       </ScrollView>
 
@@ -347,7 +432,6 @@ export default function TelaMaterias() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  // CORRIGIDO: Aumentar paddingBottom para não ser cortado pela Tab Bar
   scrollContent: { padding: 20, gap: 24, paddingBottom: 120 }, 
   headerRow: {
     flexDirection: 'row',
@@ -377,22 +461,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 48,
     gap: 16,
-    minHeight: 400,
+    minHeight: 300,
   },
   emptyIcon: { marginBottom: 16, opacity: 0.8 },
   emptyTitle: { fontSize: 22, fontWeight: '700' },
   emptyText: { textAlign: 'center', fontSize: 16, marginBottom: 16 },
-
   fabButton: {
     position: 'absolute',
-    // CORRIGIDO: Mover para cima da Tab Bar (bottom: 96)
     bottom: 96, 
     right: 20,
     width: 60,
@@ -407,28 +488,22 @@ const styles = StyleSheet.create({
     elevation: 8,
     zIndex: 10,
   },
-
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
-  dialogDescription: { fontSize: 14, color: '#737373', marginBottom: 16 },
   form: { gap: 12 },
   inputGroup: { width: '100%', gap: 6 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
-
-  // === BOTÕES GRANDES NO MODAL ===
   dialogActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 8,
     marginTop: 20,
   },
-
   colorPickerContainer: {
     width: '100%',
     alignItems: 'center',
     marginTop: 8,
     gap: 0,
   },
-
   colorPreview: {
     width: 24,
     height: 24,

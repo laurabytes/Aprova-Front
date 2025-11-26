@@ -8,16 +8,22 @@ const MateriaService = {
     },
 
     // POST /api/materias/criar
-    // 💡 CORREÇÃO: Recebe o objeto completo e envia APENAS o 'nome'.
-    criar: async ({ nome }) => { 
-        const response = await api.post('/materias/criar', { nome });
-        return response.data; // Retorna MateriaDTOResponse (espera-se: { id, nome })
+    // 💡 CORREÇÃO: Recebe o objeto completo (ex: { nome: "Math", usuarioId: 1 })
+    criar: async (dadosMateria) => { 
+        try {
+            // Envia o objeto completo para que o backend receba 'nome' e 'usuarioId'
+            const response = await api.post('/materias/criar', dadosMateria);
+            return response.data; // Retorna MateriaDTOResponse
+        } catch(error) {
+            console.error("MateriaService: erro ao criar matéria", error);
+            throw error;
+        }
     },
 
     // PUT /api/materias/atualizar/{id}
-    // 💡 CORREÇÃO: Recebe o objeto completo e envia APENAS o 'nome'.
-    atualizar: async (id, { nome }) => { 
-        const response = await api.put(`/materias/atualizar/${id}`, { nome });
+    // 💡 CORREÇÃO: Também ajustado para enviar os dados completos se necessário
+    atualizar: async (id, dadosMateria) => { 
+        const response = await api.put(`/materias/atualizar/${id}`, dadosMateria);
         return response.data; // Retorna MateriaDTOResponse
     },
 

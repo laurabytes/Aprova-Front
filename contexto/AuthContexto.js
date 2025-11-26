@@ -1,3 +1,4 @@
+// contexto/AuthContexto.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import UsuarioService from '../servicos/UsuarioService'; 
@@ -34,40 +35,52 @@ export function AuthProvider({ children }) {
   
   const login = async (email, password) => { 
     try {
-      // 🚀 Chamada simplificada ao Service
       const data = await UsuarioService.login(email, password);
       
-      // 💡 CORREÇÃO: Assume que a API retorna id e nome (ou usa fallbacks)
+      // --- DEBUG: Verifique o que a API retorna no console ---
+      console.log("--- RESPOSTA DO LOGIN ---");
+      console.log(JSON.stringify(data, null, 2));
+      // -------------------------------------------------------
+
+      // Tenta extrair o token de diferentes formatos comuns
+      // Se 'data' for uma string direta, usa ela como token
+      let token = null;
+      if (typeof data === 'string') {
+          token = data;
+      } else {
+          token = data.token || data.accessToken || data.jwt;
+      }
+
+      if (!token) {
+          console.error("ERRO CRÍTICO: Token não encontrado na resposta!");
+          throw new Error("Token não recebido do servidor.");
+      }
+
       const userToStore = { 
         email: email, 
-        token: data.token, 
+        token: token, 
         nome: data.nome || 'Usuário', 
         id: data.id || null
       }; 
 
       await AsyncStorage.setItem('user', JSON.stringify(userToStore));
-      
       setUser(userToStore);
       
     } catch (error) {
-      // Tratamento de erro centralizado
       const message = error.response?.data?.message || 'Credenciais inválidas ou erro no servidor.';
-      console.error('Erro ao autenticar:', error.message);
+      console.error('Erro ao autenticar:', error);
       throw new Error(message);
     }
   };
 
   const register = async (nome, email, password) => { 
     try {
-      // 🚀 Chamada simplificada ao Service
       await UsuarioService.register(nome, email, password);
-      
       // Se deu certo, faz o login automático
       await login(email, password);
-
     } catch (error) {
       const message = error.response?.data?.message || 'Não foi possível cadastrar. Verifique os dados.';
-      console.error('Erro ao cadastrar:', error.message);
+      console.error('Erro ao cadastrar:', error);
       throw new Error(message);
     }
   };
