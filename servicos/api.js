@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 // Verifique se este IP é acessível do seu dispositivo
-const BASE_URL = 'http://10.136.36.194:8150/api'; 
+const BASE_URL = 'http://10.136.36.194:8409/api'; 
 
 const api = axios.create({
   baseURL: BASE_URL,
