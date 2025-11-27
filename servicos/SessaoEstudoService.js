@@ -1,30 +1,28 @@
-import api from './api'; 
+// servicos/SessaoEstudoService.js
+import api from './api';
 
-const SessaoEstudoService = {
-    // GET /api/sessoes-estudo/listar
-    listar: async () => {
-        const response = await api.get('/sessoes-estudo/listar');
-        return response.data; // Retorna List<SessaoEstudoDTOResponse>
-    },
+class SessaoEstudoService {
 
-    // POST /api/sessoes-estudo/criar
-    criar: async (sessaoEstudoDTORequest) => {
-        // Envia o DTO SessaoEstudoDTORequest (Ex: {dataInicio, duracao, tipo})
-        const response = await api.post('/sessoes-estudo/criar', sessaoEstudoDTORequest);
-        return response.data; // Retorna SessaoEstudoDTOResponse
-    },
+  async listar() {
+    return (await api.get('/sessoes-estudo/listar')).data;
+  }
 
-    // PUT /api/sessoes-estudo/atualizar/{id}
-    atualizar: async (id, sessaoEstudoDTORequest) => {
-        // Envia o DTO SessaoEstudoDTORequest
-        const response = await api.put(`/sessoes-estudo/atualizar/${id}`, sessaoEstudoDTORequest);
-        return response.data; // Retorna SessaoEstudoDTOResponse
-    },
+  async buscarPorId(id) {
+    return (await api.get(`/sessoes-estudo/${id}`)).data;
+  }
 
-    // DELETE /api/sessoes-estudo/apagar/{id}
-    apagar: async (id) => {
-        await api.delete(`/sessoes-estudo/apagar/${id}`);
-    }
-};
+  async criar(dados) {
+    return (await api.post('/sessoes-estudo/criar', dados)).data;
+  }
 
-export default SessaoEstudoService;
+  async atualizar(id, dados) {
+    return (await api.put(`/sessoes-estudo/atualizar/${id}`, dados)).data;
+  }
+
+  async apagar(id) {
+    return (await api.delete(`/sessoes-estudo/apagar/${id}`)).data;
+  }
+
+}
+
+export default new SessaoEstudoService();

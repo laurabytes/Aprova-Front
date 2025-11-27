@@ -1,7 +1,7 @@
 // app/(tabs)/objetivos.jsx
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { CheckCircle2, Circle, Edit, Plus, Target, Trash2 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react'; 
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,10 +13,9 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // CORREÇÃO PARA TIRAR O WARNING
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Slider from '@react-native-community/slider';
-import SegmentedControl from '@react-native-segmented-control/segmented-control';
 
 import { Badge } from '../../componentes/Badge';
 import { Botao } from '../../componentes/Botao';
@@ -30,10 +29,8 @@ import {
 } from '../../componentes/Card';
 import { Dialog } from '../../componentes/Dialog';
 import { Progress } from '../../componentes/Progress';
-import { Textarea } from '../../componentes/Textarea';
 import { useAuth } from '../../contexto/AuthContexto';
-// NOVO: Importar useStudyData
-import { useStudyData } from '../../contexto/StudyDataContexto'; 
+import { useStudyData } from '../../contexto/StudyDataContexto';
 import { cores } from '../../tema/cores';
 
 // Função para formatar a data de YYYY-MM-DD para DD/MM/AAAA
@@ -48,14 +45,13 @@ export default function TelaMetas() {
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
-  // USAR CONTEXTO: Obter dados e funções de metas
-  const { 
-    goals, 
-    updateGoal, 
-    addGoal, 
-    deleteGoal, 
-    toggleGoalStatus, 
-    isLoading: isContextLoading 
+  const {
+    goals,
+    updateGoal,
+    addGoal,
+    deleteGoal,
+    toggleGoalStatus,
+    isLoading: isContextLoading
   } = useStudyData();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -64,16 +60,12 @@ export default function TelaMetas() {
   const [showDatePickerFor, setShowDatePickerFor] = useState(null);
   const [tempDate, setTempDate] = useState(new Date());
 
+  // Estado simplificado: Apenas Título e Data
   const [formData, setFormData] = useState({
     titulo: '',
-    descricao: '',
-    dataInicio: new Date().toISOString().split('T')[0], // Define padrão
-    dataFim: '',
-    status: 'EM_ANDAMENTO',
-    progresso: 0,
+    data: new Date().toISOString().split('T')[0], // Padrão hoje
   });
 
-  // Atualização de progresso via Slider (usando updateGoal do contexto)
   const handleProgressChange = (goalId, newProgressValue) => {
     const progressoValido = Math.max(0, Math.min(100, Math.round(newProgressValue)));
     let newStatus = 'EM_ANDAMENTO';
@@ -83,16 +75,17 @@ export default function TelaMetas() {
     }
 
     const goalToUpdate = goals.find(g => g.id === goalId);
-    if(goalToUpdate) {
-        updateGoal({ ...goalToUpdate, progresso: progressoValido, status: newStatus });
+    if (goalToUpdate) {
+      // Nota: O backend atual pode não salvar progresso/status se não tiver os campos,
+      // mas mantemos a lógica otimista no front.
+      updateGoal({ ...goalToUpdate, progresso: progressoValido, status: newStatus });
     }
   };
 
   // ======== Date Picker ========
   const getDateValue = (dateString) => {
     if (dateString) {
-      // Adiciona 'T00:00:00' para garantir que a data seja interpretada corretamente no fuso horário local
-      const date = new Date(dateString + 'T00:00:00'); 
+      const date = new Date(dateString + 'T00:00:00');
       if (!isNaN(date.getTime())) {
         return date;
       }
@@ -100,9 +93,9 @@ export default function TelaMetas() {
     return new Date();
   };
 
-  const openDatePicker = (field) => {
-    setShowDatePickerFor(field);
-    setTempDate(getDateValue(formData[field] || new Date().toISOString().split('T')[0]));
+  const openDatePicker = () => {
+    setShowDatePickerFor('data');
+    setTempDate(getDateValue(formData.data));
   };
 
   const onDateChange = (event, selectedDate) => {
@@ -112,7 +105,7 @@ export default function TelaMetas() {
       setShowDatePickerFor(null);
       if (event.type === 'set' && selectedDate) {
         const formattedDate = formatDateToISOString(selectedDate);
-        setFormData({ ...formData, [showDatePickerFor]: formattedDate });
+        setFormData({ ...formData, data: formattedDate });
       }
     } else {
       setTempDate(selectedDate || tempDate);
@@ -122,7 +115,7 @@ export default function TelaMetas() {
   const confirmDate = () => {
     const formatDateToISOString = (date) => date.toISOString().split('T')[0];
     const formattedDate = formatDateToISOString(tempDate);
-    setFormData({ ...formData, [showDatePickerFor]: formattedDate });
+    setFormData({ ...formData, data: formattedDate });
     setShowDatePickerFor(null);
   };
 
@@ -133,55 +126,40 @@ export default function TelaMetas() {
 
   const handleSubmit = async () => {
     if (formData.titulo.trim() === '') {
-        Alert.alert('Campo Obrigatório', 'Por favor, preencha o título da meta.');
-        return;
-    }
-    
-    // Validação de datas
-    if (formData.dataFim && formData.dataInicio) {
-      const dataInicio = new Date(formData.dataInicio + 'T00:00:00');
-      const dataFim = new Date(formData.dataFim + 'T00:00:00');
-      if (dataFim < dataInicio) {
-        Alert.alert('Data Inválida', 'A data de fim não pode ser anterior à data de início.');
-        return;
-      }
+      Alert.alert('Campo Obrigatório', 'Por favor, preencha o título da meta.');
+      return;
     }
 
     setIsLoading(true);
+    
+    // Pequeno delay para UX
     await new Promise(res => setTimeout(res, 300));
 
     try {
-      let progressoInicial = editingGoal ? editingGoal.progresso : 0;
-      let statusFinal = formData.status;
+      const userId = user?.id || null;
 
-      if (editingGoal) {
-        if (formData.status === 'CONCLUIDO' && progressoInicial !== 100) {
-          progressoInicial = 100;
-        }
-        if (formData.status === 'EM_ANDAMENTO' && progressoInicial === 100) {
-          progressoInicial = 0; // Se voltar para EM_ANDAMENTO, reseta progresso
-        }
+      if (!userId) {
+        throw new Error('Id do usuário não encontrado.');
       }
 
+      // Payload estritamente compatível com o Backend (MetasDTORequest.java)
       const dadosSalvos = {
-        titulo: formData.titulo,
-        descricao: formData.descricao,
-        dataInicio: formData.dataInicio,
-        dataFim: formData.dataFim,
-        progresso: progressoInicial,
-        status: statusFinal,
+        nome: formData.titulo, // Backend espera 'nome'
+        data: formData.data,   // Backend espera 'data' (LocalDate)
+        status: 0,             // 0 = Em andamento (Backend espera int)
+        usuarioId: userId
       };
 
       if (editingGoal) {
-        // USAR CONTEXTO
+        // Ao editar, mantemos o ID e outros dados que já existiam
         updateGoal({ ...editingGoal, ...dadosSalvos });
       } else {
+        // Adiciona campos locais para o Front funcionar bem (progresso)
         const newGoal = {
           ...dadosSalvos,
-          usuarioId: user?.id,
           progresso: 0,
+          status: 'EM_ANDAMENTO' // Para controle visual imediato
         };
-        // USAR CONTEXTO
         addGoal(newGoal);
       }
 
@@ -189,13 +167,10 @@ export default function TelaMetas() {
       setEditingGoal(null);
       setFormData({
         titulo: '',
-        descricao: '',
-        dataInicio: new Date().toISOString().split('T')[0],
-        dataFim: '',
-        status: 'EM_ANDAMENTO',
-        progresso: 0,
+        data: new Date().toISOString().split('T')[0],
       });
     } catch (error) {
+      console.error(error);
       Alert.alert('Erro', 'Não foi possível salvar a meta.');
     } finally {
       setIsLoading(false);
@@ -209,7 +184,6 @@ export default function TelaMetas() {
         text: 'Excluir',
         style: 'destructive',
         onPress: () => {
-          // USAR CONTEXTO
           deleteGoal(id);
         },
       },
@@ -217,19 +191,14 @@ export default function TelaMetas() {
   };
 
   const toggleStatus = (goal) => {
-    // USAR CONTEXTO
     toggleGoalStatus(goal);
   };
 
   const openEditDialog = (goal) => {
     setEditingGoal(goal);
     setFormData({
-      titulo: goal.titulo,
-      descricao: goal.descricao,
-      dataInicio: goal.dataInicio ? goal.dataInicio.split('T')[0] : '',
-      dataFim: goal.dataFim ? goal.dataFim.split('T')[0] : '',
-      status: goal.status,
-      progresso: (goal.progresso || 0),
+      titulo: goal.titulo || goal.nome, // Fallback caso venha como 'nome' do backend
+      data: goal.data || goal.dataInicio, // Tenta pegar a data disponível
     });
     setIsDialogOpen(true);
   };
@@ -238,30 +207,25 @@ export default function TelaMetas() {
     setEditingGoal(null);
     setFormData({
       titulo: '',
-      descricao: '',
-      dataInicio: new Date().toISOString().split('T')[0],
-      dataFim: '',
-      status: 'EM_ANDAMENTO',
-      progresso: 0,
+      data: new Date().toISOString().split('T')[0],
     });
     setIsDialogOpen(true);
   };
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'CONCLUIDO':
-        return <Badge variant="secondary">Concluído</Badge>;
-      case 'EM_ANDAMENTO':
-        return <Badge variant="default">Em Andamento</Badge>;
-      case 'CANCELADO':
-        return <Badge variant="destructive">Cancelado</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+    // Tratamento para status numérico ou string
+    const s = String(status);
+    if (s === 'CONCLUIDO' || s === '1') {
+      return <Badge variant="secondary">Concluído</Badge>;
     }
+    if (s === 'EM_ANDAMENTO' || s === '0') {
+      return <Badge variant="default">Em Andamento</Badge>;
+    }
+    return <Badge variant="destructive">Cancelado</Badge>;
   };
 
-  const activeGoals = goals.filter((g) => g.status !== 'CONCLUIDO');
-  const completedGoals = goals.filter((g) => g.status === 'CONCLUIDO');
+  const activeGoals = goals.filter((g) => String(g.status) !== 'CONCLUIDO' && String(g.status) !== '1');
+  const completedGoals = goals.filter((g) => String(g.status) === 'CONCLUIDO' || String(g.status) === '1');
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -281,7 +245,7 @@ export default function TelaMetas() {
             {showDatePickerFor ? (
               <View>
                 <Text style={[styles.dialogTitle, { color: theme.foreground, marginBottom: 16 }]}>
-                  {showDatePickerFor === 'dataInicio' ? 'Selecione a Data de Início' : 'Selecione a Data de Fim'}
+                  Selecione a Data
                 </Text>
 
                 <DateTimePicker
@@ -316,45 +280,15 @@ export default function TelaMetas() {
                     placeholder="Ex: Concluir curso de Matemática"
                   />
 
-                  <Text style={[styles.label, { color: theme.foreground }]}>Descrição</Text>
-                  <Textarea
-                    value={formData.descricao}
-                    onChangeText={(t) => setFormData({ ...formData, descricao: t })}
-                    placeholder="Descreva sua meta (opcional)"
-                  />
-
-                  <Text style={[styles.label, { color: theme.foreground }]}>Data Início</Text>
+                  <Text style={[styles.label, { color: theme.foreground }]}>Data</Text>
                   <TouchableOpacity
                     style={[styles.fakeInput, { borderColor: theme.border, backgroundColor: theme.card }]}
-                    onPress={() => openDatePicker('dataInicio')}
+                    onPress={openDatePicker}
                   >
-                    <Text style={[{ fontSize: 14, color: formData.dataInicio ? theme.foreground : theme.mutedForeground }]}>
-                      {formatToDisplayDate(formData.dataInicio) || 'DD/MM/AAAA'}
+                    <Text style={[{ fontSize: 14, color: formData.data ? theme.foreground : theme.mutedForeground }]}>
+                      {formatToDisplayDate(formData.data) || 'DD/MM/AAAA'}
                     </Text>
                   </TouchableOpacity>
-
-                  <Text style={[styles.label, { color: theme.foreground }]}>Data Fim (Opcional)</Text>
-                  <TouchableOpacity
-                    style={[styles.fakeInput, { borderColor: theme.border, backgroundColor: theme.card }]}
-                    onPress={() => openDatePicker('dataFim')}
-                  >
-                    <Text style={[{ fontSize: 14, color: formData.dataFim ? theme.foreground : theme.mutedForeground }]}>
-                      {formatToDisplayDate(formData.dataFim) || 'DD/MM/AAAA'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <Text style={[styles.label, { color: theme.foreground }]}>Status</Text>
-                  <SegmentedControl
-                    values={['Em Andamento', 'Concluído']}
-                    selectedIndex={formData.status === 'CONCLUIDO' ? 1 : 0}
-                    onValueChange={(value) => {
-                      const newStatus = value === 'Concluído' ? 'CONCLUIDO' : 'EM_ANDAMENTO';
-                      setFormData({ ...formData, status: newStatus });
-                    }}
-                    style={styles.segmentedControl}
-                    backgroundColor={theme.muted}
-                    tintColor={theme.primary}
-                  />
 
                   <View style={[styles.dialogActions, { justifyContent: 'space-between' }]}>
                     <Botao variant="destructive-outline" onPress={() => setIsDialogOpen(false)} style={{ flex: 1 }}>
@@ -385,12 +319,13 @@ export default function TelaMetas() {
             {activeGoals.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Em Andamento</Text>
-                {/* CORRIGIDO: Usa String(goal.id) para garantir que a chave (key) seja válida */}
                 {activeGoals.map((goal) => (
                   <Card key={String(goal.id)} style={styles.card}>
                     <CardHeader>
                       <View style={styles.cardTitleRow}>
-                        <CardTitle style={{ flex: 1, color: theme.foreground }}>{goal.titulo}</CardTitle>
+                        <CardTitle style={{ flex: 1, color: theme.foreground }}>
+                           {goal.titulo || goal.nome}
+                        </CardTitle>
                         <TouchableOpacity onPress={() => toggleStatus(goal)}>
                           <Circle color={theme.mutedForeground} size={18} />
                         </TouchableOpacity>
@@ -401,6 +336,7 @@ export default function TelaMetas() {
                           <Trash2 color={theme.destructive} size={18} />
                         </TouchableOpacity>
                       </View>
+                      {/* Descrição removida visualmente se não existir, mas o campo no objeto ainda pode existir */}
                       {goal.descricao && <CardDescription>{goal.descricao}</CardDescription>}
                     </CardHeader>
                     <CardContent style={{ gap: 16 }}>
@@ -411,7 +347,7 @@ export default function TelaMetas() {
                             {goal.progresso || 0}%
                           </Text>
                         </View>
-                        <Progress value={goal.progresso} />
+                        <Progress value={goal.progresso || 0} />
                       </View>
 
                       <View style={styles.sliderContainer}>
@@ -423,7 +359,7 @@ export default function TelaMetas() {
                           minimumValue={0}
                           maximumValue={100}
                           step={1}
-                          value={parseInt(goal.progresso, 10)}
+                          value={parseInt(goal.progresso || 0, 10)}
                           onValueChange={(value) => handleProgressChange(goal.id, value)}
                           minimumTrackTintColor={theme.primary}
                           maximumTrackTintColor={theme.mutedForeground}
@@ -433,7 +369,7 @@ export default function TelaMetas() {
 
                       <View style={styles.cardFooter}>
                         <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
-                          {formatToDisplayDate(goal.dataInicio)} {goal.dataFim ? `- ${formatToDisplayDate(goal.dataFim)}` : ''}
+                          {formatToDisplayDate(goal.data || goal.dataInicio)}
                         </Text>
                         {getStatusBadge(goal.status)}
                       </View>
@@ -446,12 +382,13 @@ export default function TelaMetas() {
             {completedGoals.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Concluídos</Text>
-                {/* CORRIGIDO: Usa String(goal.id) para garantir que a chave (key) seja válida */}
                 {completedGoals.map((goal) => (
                   <Card key={String(goal.id)} style={styles.card}>
                     <CardHeader>
                       <View style={styles.cardTitleRow}>
-                        <CardTitle style={{ flex: 1, color: theme.foreground }}>{goal.titulo}</CardTitle>
+                        <CardTitle style={{ flex: 1, color: theme.foreground }}>
+                            {goal.titulo || goal.nome}
+                        </CardTitle>
                         <TouchableOpacity onPress={() => toggleStatus(goal)}>
                           <CheckCircle2 color={theme.primary} size={18} />
                         </TouchableOpacity>
@@ -469,11 +406,11 @@ export default function TelaMetas() {
                             {goal.progresso || 0}%
                           </Text>
                         </View>
-                        <Progress value={goal.progresso} />
+                        <Progress value={goal.progresso || 0} />
                       </View>
                       <View style={styles.cardFooter}>
                         <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
-                          {formatToDisplayDate(goal.dataInicio)} {goal.dataFim ? `- ${formatToDisplayDate(goal.dataFim)}` : ''}
+                           {formatToDisplayDate(goal.data || goal.dataInicio)}
                         </Text>
                         {getStatusBadge(goal.status)}
                       </View>
@@ -497,7 +434,6 @@ export default function TelaMetas() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  // CORRIGIDO: Aumentar paddingBottom para não ser cortado pela Tab Bar
   scrollContent: { padding: 20, gap: 24, paddingBottom: 120 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 28, fontWeight: '700' },
@@ -525,7 +461,6 @@ const styles = StyleSheet.create({
   slider: { width: '100%', height: 40 },
   fabButton: {
     position: 'absolute',
-    // CORRIGIDO: Mover para cima da Tab Bar (bottom: 96)
     bottom: 96,
     right: 20,
     width: 60,
@@ -551,5 +486,4 @@ const styles = StyleSheet.create({
   emptyIcon: { marginBottom: 16, opacity: 0.8 },
   emptyTitle: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
   emptyText: { textAlign: 'center', fontSize: 16, marginBottom: 16 },
-  segmentedControl: { height: 44 },
 });
