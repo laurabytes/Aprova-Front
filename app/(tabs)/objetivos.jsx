@@ -147,7 +147,7 @@ export default function TelaMetas() {
         nome: formData.titulo, // Backend espera 'nome'
         data: formData.data,   // Backend espera 'data' (LocalDate)
         status: 0,             // 0 = Em andamento (Backend espera int)
-        usuarioId: userId
+        usuarioId: Number(userId), // Backend espera usuarioId como Long
       };
 
       if (editingGoal) {

@@ -1,9 +1,9 @@
-// servicos/api.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-// Verifique se este IP é acessível do seu dispositivo
-const BASE_URL = 'http://10.136.36.194:8409/api'; 
+// ⚠️ ATENÇÃO: Seus logs mostram que o Tomcat iniciou na porta 8160.
+// Confirme seu IP no terminal (ipconfig/ifconfig).
+const BASE_URL = 'http://172.29.80.1:8160/api'; 
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -12,25 +12,24 @@ const api = axios.create({
   },
 });
 
-// INTERCEPTOR: Adiciona o Token automaticamente em toda requisição
+// INTERCEPTOR: Adiciona o Token automaticamente, mas com segurança
 api.interceptors.request.use(
   async (config) => {
     try {
-      // Busca o objeto 'user' salvo pelo AuthContext
       const userJson = await AsyncStorage.getItem('user');
       
       if (userJson) {
         const user = JSON.parse(userJson);
         
-        if (user && user.token) {
-          // Adiciona o token Bearer
+        // CORREÇÃO CRÍTICA:
+        // Verifica se o token existe E se não é a string literal "undefined"
+        if (user && user.token && user.token !== 'undefined') {
           config.headers.Authorization = `Bearer ${user.token}`;
-          // console.log(`[API] Token anexado para: ${config.url}`); // Descomente para debugar
         } else {
-          console.warn(`[API] Usuário encontrado, mas sem token para: ${config.url}`);
+          // Se o token for "undefined" ou ruim, não enviamos o cabeçalho Authorization.
+          // Isso evita que o backend tente ler um token quebrado.
+          // console.warn(`[API] Token inválido ou ausente. Enviando sem auth.`);
         }
-      } else {
-         // console.log(`[API] Nenhum usuário logado. Requisição sem token para: ${config.url}`);
       }
     } catch (error) {
       console.error('Erro ao buscar token no storage', error);
