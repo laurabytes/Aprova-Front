@@ -60,24 +60,24 @@ export default function TelaMetas() {
   const [showDatePickerFor, setShowDatePickerFor] = useState(null);
   const [tempDate, setTempDate] = useState(new Date());
 
-  // Estado simplificado: Apenas Título e Data
   const [formData, setFormData] = useState({
     titulo: '',
-    data: new Date().toISOString().split('T')[0], // Padrão hoje
+    data: new Date().toISOString().split('T')[0],
   });
 
+  // --- ALTERAÇÃO 1: Lógica de Status Inteiro no Slider ---
   const handleProgressChange = (goalId, newProgressValue) => {
     const progressoValido = Math.max(0, Math.min(100, Math.round(newProgressValue)));
-    let newStatus = 'EM_ANDAMENTO';
+    
+    // Status 0 = Em Andamento, 1 = Concluído
+    let newStatus = 0; 
 
     if (progressoValido === 100) {
-      newStatus = 'CONCLUIDO';
+      newStatus = 1;
     }
 
-    const goalToUpdate = goals.find(g => g.id === goalId);
+    const goalToUpdate = goals.find(g => (g.id || g.metasId) === goalId);
     if (goalToUpdate) {
-      // Nota: O backend atual pode não salvar progresso/status se não tiver os campos,
-      // mas mantemos a lógica otimista no front.
       updateGoal({ ...goalToUpdate, progresso: progressoValido, status: newStatus });
     }
   };
@@ -132,7 +132,6 @@ export default function TelaMetas() {
 
     setIsLoading(true);
     
-    // Pequeno delay para UX
     await new Promise(res => setTimeout(res, 300));
 
     try {
@@ -142,23 +141,22 @@ export default function TelaMetas() {
         throw new Error('Id do usuário não encontrado.');
       }
 
-      // Payload estritamente compatível com o Backend (MetasDTORequest.java)
+      // --- ALTERAÇÃO 2: Payload com Status Inteiro ---
       const dadosSalvos = {
-        nome: formData.titulo, // Backend espera 'nome'
-        data: formData.data,   // Backend espera 'data' (LocalDate)
-        status: 0,             // 0 = Em andamento (Backend espera int)
-        usuarioId: Number(userId), // Backend espera usuarioId como Long
+        nome: formData.titulo,
+        data: formData.data,
+        status: 0, // Envia Inteiro 0
+        usuarioId: Number(userId),
       };
 
       if (editingGoal) {
-        // Ao editar, mantemos o ID e outros dados que já existiam
         updateGoal({ ...editingGoal, ...dadosSalvos });
       } else {
-        // Adiciona campos locais para o Front funcionar bem (progresso)
+        // Garante que o objeto local também use Inteiro
         const newGoal = {
           ...dadosSalvos,
           progresso: 0,
-          status: 'EM_ANDAMENTO' // Para controle visual imediato
+          status: 0 
         };
         addGoal(newGoal);
       }
@@ -191,14 +189,20 @@ export default function TelaMetas() {
   };
 
   const toggleStatus = (goal) => {
+    // Se o seu Contexto espera alterar o status, ele deve estar preparado para receber o objeto.
+    // Aqui apenas chamamos a função do contexto.
+    // Se quiser garantir a alternância manual de inteiros aqui antes de enviar:
+    // const novoStatus = goal.status === 1 ? 0 : 1;
+    // updateGoal({ ...goal, status: novoStatus });
+    // Mas vamos manter a chamada original do contexto:
     toggleGoalStatus(goal);
   };
 
   const openEditDialog = (goal) => {
     setEditingGoal(goal);
     setFormData({
-      titulo: goal.titulo || goal.nome, // Fallback caso venha como 'nome' do backend
-      data: goal.data || goal.dataInicio, // Tenta pegar a data disponível
+      titulo: goal.titulo || goal.nome,
+      data: goal.data || goal.dataInicio,
     });
     setIsDialogOpen(true);
   };
@@ -212,20 +216,21 @@ export default function TelaMetas() {
     setIsDialogOpen(true);
   };
 
+  // --- ALTERAÇÃO 3: Badge verifica Inteiros ---
   const getStatusBadge = (status) => {
-    // Tratamento para status numérico ou string
-    const s = String(status);
-    if (s === 'CONCLUIDO' || s === '1') {
+    // Verifica se é 1 (Concluído)
+    if (status === 1) {
       return <Badge variant="secondary">Concluído</Badge>;
     }
-    if (s === 'EM_ANDAMENTO' || s === '0') {
-      return <Badge variant="default">Em Andamento</Badge>;
-    }
-    return <Badge variant="destructive">Cancelado</Badge>;
+    // Caso contrário (0 ou null), assume Em Andamento
+    return <Badge variant="default">Em Andamento</Badge>;
   };
 
-  const activeGoals = goals.filter((g) => String(g.status) !== 'CONCLUIDO' && String(g.status) !== '1');
-  const completedGoals = goals.filter((g) => String(g.status) === 'CONCLUIDO' || String(g.status) === '1');
+  // --- ALTERAÇÃO 4: Filtros verificam Inteiros ---
+  // Filtra o que NÃO é 1 (Concluído)
+  const activeGoals = goals.filter((g) => g.status !== 1);
+  // Filtra o que É 1 (Concluído)
+  const completedGoals = goals.filter((g) => g.status === 1);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -319,104 +324,111 @@ export default function TelaMetas() {
             {activeGoals.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Em Andamento</Text>
-                {activeGoals.map((goal) => (
-                  <Card key={String(goal.id)} style={styles.card}>
-                    <CardHeader>
-                      <View style={styles.cardTitleRow}>
-                        <CardTitle style={{ flex: 1, color: theme.foreground }}>
-                           {goal.titulo || goal.nome}
-                        </CardTitle>
-                        <TouchableOpacity onPress={() => toggleStatus(goal)}>
-                          <Circle color={theme.mutedForeground} size={18} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => openEditDialog(goal)}>
-                          <Edit color={theme.mutedForeground} size={18} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleDelete(goal.id)}>
-                          <Trash2 color={theme.destructive} size={18} />
-                        </TouchableOpacity>
-                      </View>
-                      {/* Descrição removida visualmente se não existir, mas o campo no objeto ainda pode existir */}
-                      {goal.descricao && <CardDescription>{goal.descricao}</CardDescription>}
-                    </CardHeader>
-                    <CardContent style={{ gap: 16 }}>
-                      <View>
-                        <View style={styles.progressHeader}>
-                          <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>Progresso</Text>
-                          <Text style={{ color: theme.foreground, fontWeight: '500' }}>
-                            {goal.progresso || 0}%
-                          </Text>
+                {activeGoals.map((goal) => {
+                  const idCorreto = goal.id || goal.metasId; // Correção do ID
+
+                  return (
+                    <Card key={String(idCorreto)} style={styles.card}>
+                      <CardHeader>
+                        <View style={styles.cardTitleRow}>
+                          <CardTitle style={{ flex: 1, color: theme.foreground }}>
+                             {goal.titulo || goal.nome}
+                          </CardTitle>
+                          <TouchableOpacity onPress={() => toggleStatus(goal)}>
+                            <Circle color={theme.mutedForeground} size={18} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => openEditDialog(goal)}>
+                            <Edit color={theme.mutedForeground} size={18} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => handleDelete(idCorreto)}>
+                            <Trash2 color={theme.destructive} size={18} />
+                          </TouchableOpacity>
                         </View>
-                        <Progress value={goal.progresso || 0} />
-                      </View>
+                        {goal.descricao && <CardDescription>{goal.descricao}</CardDescription>}
+                      </CardHeader>
+                      <CardContent style={{ gap: 16 }}>
+                        <View>
+                          <View style={styles.progressHeader}>
+                            <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>Progresso</Text>
+                            <Text style={{ color: theme.foreground, fontWeight: '500' }}>
+                              {goal.progresso || 0}%
+                            </Text>
+                          </View>
+                          <Progress value={goal.progresso || 0} />
+                        </View>
 
-                      <View style={styles.sliderContainer}>
-                        <Text style={[styles.label, { color: theme.mutedForeground, fontSize: 12, marginBottom: -8 }]}>
-                          Ajustar Progresso: {goal.progresso || 0}%
-                        </Text>
-                        <Slider
-                          style={styles.slider}
-                          minimumValue={0}
-                          maximumValue={100}
-                          step={1}
-                          value={parseInt(goal.progresso || 0, 10)}
-                          onValueChange={(value) => handleProgressChange(goal.id, value)}
-                          minimumTrackTintColor={theme.primary}
-                          maximumTrackTintColor={theme.mutedForeground}
-                          thumbTintColor={theme.primary}
-                        />
-                      </View>
+                        <View style={styles.sliderContainer}>
+                          <Text style={[styles.label, { color: theme.mutedForeground, fontSize: 12, marginBottom: -8 }]}>
+                            Ajustar Progresso: {goal.progresso || 0}%
+                          </Text>
+                          <Slider
+                            style={styles.slider}
+                            minimumValue={0}
+                            maximumValue={100}
+                            step={1}
+                            value={parseInt(goal.progresso || 0, 10)}
+                            onValueChange={(value) => handleProgressChange(idCorreto, value)}
+                            minimumTrackTintColor={theme.primary}
+                            maximumTrackTintColor={theme.mutedForeground}
+                            thumbTintColor={theme.primary}
+                          />
+                        </View>
 
-                      <View style={styles.cardFooter}>
-                        <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
-                          {formatToDisplayDate(goal.data || goal.dataInicio)}
-                        </Text>
-                        {getStatusBadge(goal.status)}
-                      </View>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <View style={styles.cardFooter}>
+                          <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
+                            {formatToDisplayDate(goal.data || goal.dataInicio)}
+                          </Text>
+                          {getStatusBadge(goal.status)}
+                        </View>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </View>
             )}
 
             {completedGoals.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Concluídos</Text>
-                {completedGoals.map((goal) => (
-                  <Card key={String(goal.id)} style={styles.card}>
-                    <CardHeader>
-                      <View style={styles.cardTitleRow}>
-                        <CardTitle style={{ flex: 1, color: theme.foreground }}>
-                            {goal.titulo || goal.nome}
-                        </CardTitle>
-                        <TouchableOpacity onPress={() => toggleStatus(goal)}>
-                          <CheckCircle2 color={theme.primary} size={18} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleDelete(goal.id)}>
-                          <Trash2 color={theme.destructive} size={18} />
-                        </TouchableOpacity>
-                      </View>
-                      {goal.descricao && <CardDescription>{goal.descricao}</CardDescription>}
-                    </CardHeader>
-                    <CardContent style={{ gap: 16 }}>
-                      <View>
-                        <View style={styles.progressHeader}>
-                          <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>Progresso</Text>
-                          <Text style={{ color: theme.foreground, fontWeight: '500' }}>
-                            {goal.progresso || 0}%
-                          </Text>
+                {completedGoals.map((goal) => {
+                   const idCorreto = goal.id || goal.metasId; // Correção do ID
+
+                   return (
+                    <Card key={String(idCorreto)} style={styles.card}>
+                      <CardHeader>
+                        <View style={styles.cardTitleRow}>
+                          <CardTitle style={{ flex: 1, color: theme.foreground }}>
+                              {goal.titulo || goal.nome}
+                          </CardTitle>
+                          <TouchableOpacity onPress={() => toggleStatus(goal)}>
+                            <CheckCircle2 color={theme.primary} size={18} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => handleDelete(idCorreto)}>
+                            <Trash2 color={theme.destructive} size={18} />
+                          </TouchableOpacity>
                         </View>
-                        <Progress value={goal.progresso || 0} />
-                      </View>
-                      <View style={styles.cardFooter}>
-                        <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
-                           {formatToDisplayDate(goal.data || goal.dataInicio)}
-                        </Text>
-                        {getStatusBadge(goal.status)}
-                      </View>
-                    </CardContent>
-                  </Card>
-                ))}
+                        {goal.descricao && <CardDescription>{goal.descricao}</CardDescription>}
+                      </CardHeader>
+                      <CardContent style={{ gap: 16 }}>
+                        <View>
+                          <View style={styles.progressHeader}>
+                            <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>Progresso</Text>
+                            <Text style={{ color: theme.foreground, fontWeight: '500' }}>
+                              {goal.progresso || 0}%
+                            </Text>
+                          </View>
+                          <Progress value={goal.progresso || 0} />
+                        </View>
+                        <View style={styles.cardFooter}>
+                          <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
+                             {formatToDisplayDate(goal.data || goal.dataInicio)}
+                          </Text>
+                          {getStatusBadge(goal.status)}
+                        </View>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </View>
             )}
           </View>
