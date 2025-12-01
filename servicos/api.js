@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // ⚠️ ATENÇÃO: Seus logs mostram que o Tomcat iniciou na porta 8160.
 // Confirme seu IP no terminal (ipconfig/ifconfig).
-const BASE_URL = 'http://172.29.80.1:8160/api'; 
+const BASE_URL = 'http://172.20.3.151:8166/api'; 
 
 const api = axios.create({
   baseURL: BASE_URL,

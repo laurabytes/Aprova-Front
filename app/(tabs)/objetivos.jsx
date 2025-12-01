@@ -15,20 +15,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import Slider from '@react-native-community/slider';
+// REMOVIDO: import Slider from '@react-native-community/slider';
 
 import { Badge } from '../../componentes/Badge';
 import { Botao } from '../../componentes/Botao';
 import { CampoDeTexto } from '../../componentes/CampoDeTexto';
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardContent,
 } from '../../componentes/Card';
 import { Dialog } from '../../componentes/Dialog';
-import { Progress } from '../../componentes/Progress';
+// REMOVIDO: import { Progress } from '../../componentes/Progress'; 
 import { useAuth } from '../../contexto/AuthContexto';
 import { useStudyData } from '../../contexto/StudyDataContexto';
 import { cores } from '../../tema/cores';
@@ -65,22 +65,7 @@ export default function TelaMetas() {
     data: new Date().toISOString().split('T')[0],
   });
 
-  // --- ALTERAÇÃO 1: Lógica de Status Inteiro no Slider ---
-  const handleProgressChange = (goalId, newProgressValue) => {
-    const progressoValido = Math.max(0, Math.min(100, Math.round(newProgressValue)));
-    
-    // Status 0 = Em Andamento, 1 = Concluído
-    let newStatus = 0; 
-
-    if (progressoValido === 100) {
-      newStatus = 1;
-    }
-
-    const goalToUpdate = goals.find(g => (g.id || g.metasId) === goalId);
-    if (goalToUpdate) {
-      updateGoal({ ...goalToUpdate, progresso: progressoValido, status: newStatus });
-    }
-  };
+  // REMOVIDO: handleProgressChange (não é mais necessário sem o slider)
 
   // ======== Date Picker ========
   const getDateValue = (dateString) => {
@@ -141,18 +126,16 @@ export default function TelaMetas() {
         throw new Error('Id do usuário não encontrado.');
       }
 
-      // --- ALTERAÇÃO 2: Payload com Status Inteiro ---
       const dadosSalvos = {
         nome: formData.titulo,
         data: formData.data,
-        status: 0, // Envia Inteiro 0
+        status: 0,
         usuarioId: Number(userId),
       };
 
       if (editingGoal) {
         updateGoal({ ...editingGoal, ...dadosSalvos });
       } else {
-        // Garante que o objeto local também use Inteiro
         const newGoal = {
           ...dadosSalvos,
           progresso: 0,
@@ -189,12 +172,6 @@ export default function TelaMetas() {
   };
 
   const toggleStatus = (goal) => {
-    // Se o seu Contexto espera alterar o status, ele deve estar preparado para receber o objeto.
-    // Aqui apenas chamamos a função do contexto.
-    // Se quiser garantir a alternância manual de inteiros aqui antes de enviar:
-    // const novoStatus = goal.status === 1 ? 0 : 1;
-    // updateGoal({ ...goal, status: novoStatus });
-    // Mas vamos manter a chamada original do contexto:
     toggleGoalStatus(goal);
   };
 
@@ -216,20 +193,14 @@ export default function TelaMetas() {
     setIsDialogOpen(true);
   };
 
-  // --- ALTERAÇÃO 3: Badge verifica Inteiros ---
   const getStatusBadge = (status) => {
-    // Verifica se é 1 (Concluído)
     if (status === 1) {
       return <Badge variant="secondary">Concluído</Badge>;
     }
-    // Caso contrário (0 ou null), assume Em Andamento
     return <Badge variant="default">Em Andamento</Badge>;
   };
 
-  // --- ALTERAÇÃO 4: Filtros verificam Inteiros ---
-  // Filtra o que NÃO é 1 (Concluído)
   const activeGoals = goals.filter((g) => g.status !== 1);
-  // Filtra o que É 1 (Concluído)
   const completedGoals = goals.filter((g) => g.status === 1);
 
   return (
@@ -325,7 +296,7 @@ export default function TelaMetas() {
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Em Andamento</Text>
                 {activeGoals.map((goal) => {
-                  const idCorreto = goal.id || goal.metasId; // Correção do ID
+                  const idCorreto = goal.id || goal.metasId;
 
                   return (
                     <Card key={String(idCorreto)} style={styles.card}>
@@ -347,32 +318,12 @@ export default function TelaMetas() {
                         {goal.descricao && <CardDescription>{goal.descricao}</CardDescription>}
                       </CardHeader>
                       <CardContent style={{ gap: 16 }}>
-                        <View>
-                          <View style={styles.progressHeader}>
-                            <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>Progresso</Text>
-                            <Text style={{ color: theme.foreground, fontWeight: '500' }}>
-                              {goal.progresso || 0}%
-                            </Text>
-                          </View>
-                          <Progress value={goal.progresso || 0} />
-                        </View>
-
-                        <View style={styles.sliderContainer}>
-                          <Text style={[styles.label, { color: theme.mutedForeground, fontSize: 12, marginBottom: -8 }]}>
-                            Ajustar Progresso: {goal.progresso || 0}%
-                          </Text>
-                          <Slider
-                            style={styles.slider}
-                            minimumValue={0}
-                            maximumValue={100}
-                            step={1}
-                            value={parseInt(goal.progresso || 0, 10)}
-                            onValueChange={(value) => handleProgressChange(idCorreto, value)}
-                            minimumTrackTintColor={theme.primary}
-                            maximumTrackTintColor={theme.mutedForeground}
-                            thumbTintColor={theme.primary}
-                          />
-                        </View>
+                        
+                        {/* AQUI FORAM REMOVIDOS:
+                           1. A visualização de progresso (%)
+                           2. A barra de progresso (<Progress />)
+                           3. O Slider para alterar o progresso
+                        */}
 
                         <View style={styles.cardFooter}>
                           <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
@@ -391,7 +342,7 @@ export default function TelaMetas() {
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Concluídos</Text>
                 {completedGoals.map((goal) => {
-                   const idCorreto = goal.id || goal.metasId; // Correção do ID
+                   const idCorreto = goal.id || goal.metasId;
 
                    return (
                     <Card key={String(idCorreto)} style={styles.card}>
@@ -410,15 +361,9 @@ export default function TelaMetas() {
                         {goal.descricao && <CardDescription>{goal.descricao}</CardDescription>}
                       </CardHeader>
                       <CardContent style={{ gap: 16 }}>
-                        <View>
-                          <View style={styles.progressHeader}>
-                            <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>Progresso</Text>
-                            <Text style={{ color: theme.foreground, fontWeight: '500' }}>
-                              {goal.progresso || 0}%
-                            </Text>
-                          </View>
-                          <Progress value={goal.progresso || 0} />
-                        </View>
+                        
+                        {/* AQUI TAMBÉM FORAM REMOVIDOS A VISUALIZAÇÃO E A BARRA DE PROGRESSO */}
+                        
                         <View style={styles.cardFooter}>
                           <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
                              {formatToDisplayDate(goal.data || goal.dataInicio)}
@@ -459,7 +404,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 20, fontWeight: '600' },
   card: { width: '100%' },
   cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  // Os estilos antigos relacionados a progress e slider foram removidos
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
   fakeInput: {
     height: 44,
@@ -469,8 +414,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     justifyContent: 'center',
   },
-  sliderContainer: { paddingVertical: 4 },
-  slider: { width: '100%', height: 40 },
   fabButton: {
     position: 'absolute',
     bottom: 96,

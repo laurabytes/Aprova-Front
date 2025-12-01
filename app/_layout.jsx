@@ -1,17 +1,18 @@
 // app/_layout.jsx
-
-// 1. IMPORTAR GESTURE HANDLER NO TOPO
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler'; 
 import { SafeAreaView } from 'react-native-safe-area-context'; 
 
 import { Redirect, Slot, useRouter, useSegments } from 'expo-router';
-import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, useColorScheme, View, Text } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, useColorScheme } from 'react-native';
 import { AuthProvider, useAuth } from '../contexto/AuthContexto';
 import { cores } from '../tema/cores'; 
 import { SubjectProvider } from '../contexto/SubjectContexto'; 
 import { StudyDataProvider } from '../contexto/StudyDataContexto'; 
+
+// IMPORTAR SUA NOVA TELA
+import { TelaSplash } from '../componentes/TelaSplash'; 
 
 function LayoutInicial() {
   const { user, isLoading } = useAuth();
@@ -20,31 +21,40 @@ function LayoutInicial() {
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
+  // Estado para controlar o tempo mínimo da Splash
+  const [isSplashFinished, setIsSplashFinished] = useState(false);
+
   useEffect(() => {
-    if (isLoading) return;
+    // Força a tela de splash a ficar visível por 2.5 segundos (2500ms)
+    const timer = setTimeout(() => {
+      setIsSplashFinished(true);
+    }, 2500);
+
+    return () => clearTimeout(timer); // Limpa o timer se desmontar
+  }, []);
+
+  useEffect(() => {
+    // Só redireciona SE o carregamento do Auth acabou E a Splash terminou o tempo dela
+    if (isLoading || !isSplashFinished) return;
+
     const estaNoGrupoAuth = segments[0] === '(auth)';
+    
     if (user && estaNoGrupoAuth) {
       router.replace('/(tabs)/dashboard');
     } else if (!user && !estaNoGrupoAuth) {
       router.replace('/(auth)/login');
     }
-  }, [user, isLoading, segments, router]); 
+  }, [user, isLoading, isSplashFinished, segments, router]); 
 
-  // Adicionar um indicador de loading enquanto carrega do AsyncStorage
-  if (isLoading) {
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
-            <ActivityIndicator size="large" color={theme.primary} />
-            <Text style={{ color: theme.mutedForeground, marginTop: 10 }}>Carregando dados...</Text>
-        </SafeAreaView>
-    );
+  // ENQUANTO ESTIVER CARREGANDO OU NO TEMPO DA SPLASH, MOSTRA A TELA SPLASH
+  if (isLoading || !isSplashFinished) {
+    return <TelaSplash />;
   }
     
   if (!user && segments.length === 1 && segments[0] === '') {
       return <Redirect href="/(auth)/login" />;
   }
 
-  // 3. ENVOLVER TUDO
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -58,7 +68,6 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <SubjectProvider>
-        {/* ENVOLVER COM StudyDataProvider */}
         <StudyDataProvider>
           <LayoutInicial />
         </StudyDataProvider>

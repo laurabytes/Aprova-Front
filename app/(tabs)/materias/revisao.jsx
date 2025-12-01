@@ -11,13 +11,11 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
+import { SafeAreaView } from 'react-native-safe-area-context'; 
 import { Botao } from '../../../componentes/Botao';
-// ...
 import { Card, CardContent, CardHeader, CardTitle } from '../../../componentes/Card';
 import { cores } from '../../../tema/cores';
 
-// Função para calcular a cor do texto (Preto ou Branco)
 function getTextColorForBackground(hexColor) {
   try {
     const hex = hexColor.replace('#', '');
@@ -31,7 +29,6 @@ function getTextColorForBackground(hexColor) {
   }
 }
 
-// Função para re-embaralhar
 function shuffleArray(array) {
   let currentIndex = array.length,
     randomIndex;
@@ -48,7 +45,6 @@ export default function TelaRevisaoMista() {
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
-  // Recebe o deck serializado dos parâmetros
   const params = useLocalSearchParams();
   const { deck: deckString } = params;
 
@@ -57,7 +53,6 @@ export default function TelaRevisaoMista() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Efeito para carregar e desserializar o deck
   useEffect(() => {
     if (deckString) {
       try {
@@ -77,14 +72,13 @@ export default function TelaRevisaoMista() {
         ]);
     }
     setIsLoading(false);
-  }, [deckString, router]); // Depende apenas do deckString
+  }, [deckString, router]); 
 
   const handleNextCard = () => {
     if (currentIndex < shuffledDeck.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setIsFlipped(false);
     } else {
-      // O usuário terminou o baralho
       Alert.alert('Fim da Revisão!', 'Você revisou todos os flashcards. Deseja recomeçar?', [
         { text: 'Sair', onPress: () => router.replace('/(tabs)/materias'), style: 'cancel' },
         { text: 'Recomeçar', onPress: handleReset },
@@ -94,7 +88,7 @@ export default function TelaRevisaoMista() {
 
   const handleReset = () => {
     setIsLoading(true);
-    setShuffledDeck(shuffleArray([...shuffledDeck])); // Reembaralha
+    setShuffledDeck(shuffleArray([...shuffledDeck])); 
     setCurrentIndex(0);
     setIsFlipped(false);
     setIsLoading(false);
@@ -110,10 +104,8 @@ export default function TelaRevisaoMista() {
 
   const currentCard = shuffledDeck[currentIndex];
   
-  // Define a cor do card E a cor do texto com base no flashcard atual
   const cardColor = currentCard ? currentCard.cor : theme.card;
   const textColor = getTextColorForBackground(cardColor);
-  // NOVO: Pega o nome da matéria do flashcard
   const materiaNome = currentCard?.materiaNome || 'Revisão Mista'; 
 
   return (
@@ -126,7 +118,6 @@ export default function TelaRevisaoMista() {
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={[styles.title, { color: theme.foreground }]} numberOfLines={1}>
-              {/* ATUALIZADO: Exibe o nome da matéria */}
               {materiaNome}
             </Text>
             <Text style={[styles.subtitle, { color: theme.mutedForeground }]}>
@@ -154,7 +145,6 @@ export default function TelaRevisaoMista() {
               <Botao 
                 variant="outline" 
                 onPress={() => setIsFlipped(!isFlipped)}
-                // Estilo customizado para o botão "virar" em fundos coloridos
                 style={{ 
                   backgroundColor: 'rgba(255, 255, 255, 0.2)',
                   borderColor: 'transparent',
@@ -175,9 +165,9 @@ export default function TelaRevisaoMista() {
           </Card>
         )}
 
-        {/* Botão de Próximo */}
+        {/* Botão de Próximo - Removido marginTop: 'auto' para usar o padding do container */}
         {currentCard && (
-          <Botao onPress={handleNextCard} style={{ marginTop: 'auto' }}>
+          <Botao onPress={handleNextCard} style={{ width: '100%' }}>
             {currentIndex === shuffledDeck.length - 1 ? 'Finalizar Sessão' : 'Próximo Card'}
           </Botao>
         )}
@@ -188,7 +178,12 @@ export default function TelaRevisaoMista() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 20, gap: 24, flex: 1 }, // flex: 1 para o botão "Próximo" ir para baixo
+  scrollContent: { 
+    padding: 20, 
+    paddingBottom: 40, // AUMENTADO: Garante mais espaço no rodapé para o botão não ficar colado
+    gap: 24, 
+    flex: 1 
+  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -207,9 +202,9 @@ const styles = StyleSheet.create({
   card: { 
     width: '100%', 
     flex: 1, 
-    maxHeight: 400, // Altura máxima para o card
-    justifyContent: 'space-between', // Empurra o conteúdo e o botão "Virar"
-    paddingBottom: 24, // Espaçamento inferior
+    maxHeight: 450, // AUMENTADO: Um pouco mais alto para aproveitar telas grandes, mas o flex vai ajustar
+    justifyContent: 'space-between',
+    paddingBottom: 24,
   },
   flashcardText: {
     minHeight: 150,

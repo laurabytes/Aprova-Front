@@ -219,18 +219,17 @@ export default function TelaFlashcards() {
         </Dialog>
 
         {flashcards.length === 0 ? (
-           <Card>
-            <CardContent style={styles.emptyState}>
-              <FlipHorizontal color={theme.mutedForeground} size={48} />
-              <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
-                Nenhum flashcard cadastrado
-              </Text>
-              <Botao onPress={openCreateDialog}>
-                <Plus size={16} color="#FFF" style={{ marginRight: 8 }} />
-                Criar Primeiro Flashcard
-              </Botao>
-            </CardContent>
-          </Card>
+          // NOVO ESTADO VAZIO (IDÊNTICO À TELA DE MATÉRIAS)
+          <View style={styles.emptyContainer}>
+            {/* Ícone usado na tela de flashcard */}
+            <FlipHorizontal color={theme.mutedForeground} size={48} style={styles.emptyIcon} /> 
+            <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
+              Nenhum flashcard cadastrado
+            </Text>
+            <Text style={[styles.emptyText, { color: theme.mutedForeground }]}>
+              Use o botão de '+' no cabeçalho para adicionar seu primeiro flashcard.
+            </Text>
+          </View>
         ) : (
           <View style={styles.grid}>
             {flashcards.map((flashcard) => (
@@ -302,12 +301,19 @@ const styles = StyleSheet.create({
     minHeight: 80,
     fontSize: 16,
   },
-  emptyState: {
-    paddingVertical: 48,
+  // INÍCIO DOS NOVOS ESTILOS PARA EMPTY STATE (Copiado do index.jsx)
+  emptyContainer: { 
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
     gap: 16,
+    minHeight: 300, // Garante que o container tenha um tamanho mínimo
   },
-  emptyTitle: { fontSize: 18, fontWeight: '600' },
+  emptyIcon: { marginBottom: 16, opacity: 0.8 }, 
+  emptyTitle: { fontSize: 22, fontWeight: '700' }, // Tamanho ajustado para index.jsx
+  emptyText: { textAlign: 'center', fontSize: 16, marginBottom: 16 }, // Novo texto de descrição
+  // FIM DOS NOVOS ESTILOS PARA EMPTY STATE
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 16 },
   form: { gap: 12 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },

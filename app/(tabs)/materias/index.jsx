@@ -31,7 +31,7 @@ import { Textarea } from '../../../componentes/Textarea';
 // Contextos e Serviços
 import { useAuth } from '../../../contexto/AuthContexto';
 import { useSubjects } from '../../../contexto/SubjectContexto'; 
-import MateriaService from '../../../servicos/MateriaService'; // <--- IMPORTAÇÃO DO SERVIÇO
+import MateriaService from '../../../servicos/MateriaService'; 
 import { cores } from '../../../tema/cores';
 
 function getTextColorForBackground(hexColor) {
@@ -49,18 +49,15 @@ function getTextColorForBackground(hexColor) {
 
 export default function TelaMaterias() {
   const { user } = useAuth();
-  // Mantemos o contexto caso você use 'getFlashcardsBySubject' em outras partes, 
-  // mas vamos gerenciar a lista principal via API aqui.
   const { getFlashcardsBySubject } = useSubjects();
   
   const router = useRouter();
   const scheme = useColorScheme();
   const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
 
-  // Estado local para as matérias vindas da API
   const [subjects, setSubjects] = useState([]);
-  const [isLoading, setIsLoading] = useState(false); // Loading de ações (salvar/deletar)
-  const [isPageLoading, setIsPageLoading] = useState(true); // Loading inicial da página
+  const [isLoading, setIsLoading] = useState(false); 
+  const [isPageLoading, setIsPageLoading] = useState(true); 
 
   // Estados do Modal
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -82,7 +79,6 @@ export default function TelaMaterias() {
     }
   };
 
-  // Carrega os dados toda vez que a tela ganha foco
   useFocusEffect(
     useCallback(() => {
       loadMaterias();
@@ -106,18 +102,12 @@ export default function TelaMaterias() {
     setIsLoading(true);
 
     try {
-      // Prepara o objeto payload. 
-      // Nota: Seu MateriaService atual só envia 'nome' no corpo da requisição, 
-      // mas estamos passando tudo caso você atualize o serviço depois.
       const payload = {
         nome: formData.nome,
-        descricao: formData.descricao, // O backend precisa estar pronto para receber isso
+        descricao: formData.descricao, 
         cor: formData.cor,
-        usuarioId: user.id // O backend precisa estar pronto para receber isso
+        usuarioId: user.id 
       };
-
-      console.log(payload);
-
 
       if (editingSubject) {
         await MateriaService.atualizar(editingSubject.id, payload);
@@ -125,7 +115,6 @@ export default function TelaMaterias() {
         await MateriaService.criar(payload);
       }
       
-      // Recarrega a lista após sucesso
       await loadMaterias();
       handleCloseDialog();
     } catch (error) {
@@ -147,7 +136,7 @@ export default function TelaMaterias() {
           try {
             setIsLoading(true);
             await MateriaService.apagar(id);
-            await loadMaterias(); // Recarrega lista
+            await loadMaterias(); 
           } catch (error) {
             Alert.alert('Erro', 'Falha ao excluir matéria.');
           } finally {
@@ -176,17 +165,13 @@ export default function TelaMaterias() {
     setIsDialogOpen(true);
   };
 
-  // Lógica de Sessão Mista (Adaptada para usar o estado local 'subjects')
   const handleStartMixedSession = () => {
     let allFlashcards = [];
 
     subjects.forEach(subject => {
       const materiaId = String(subject.id); 
-      // Fallback de cor
       const materiaColor = subject.cor && subject.cor.length > 3 ? subject.cor : theme.primary;
       
-      // Nota: getFlashcardsBySubject ainda depende do Contexto. 
-      // Idealmente, você buscaria flashcards via API também, mas mantivemos a lógica híbrida para não quebrar tudo.
       const materiaFlashcards = getFlashcardsBySubject(materiaId);
       
       if (materiaFlashcards && materiaFlashcards.length > 0) {
@@ -200,11 +185,10 @@ export default function TelaMaterias() {
     });
 
     if (allFlashcards.length === 0) {
-      Alert.alert('Sessão Mista', 'Nenhum flashcard encontrado nas suas matérias (verifique se o contexto de flashcards está atualizado).');
+      Alert.alert('Sessão Mista', 'Nenhum flashcard encontrado nas suas matérias.');
       return;
     }
 
-    // Embaralhar
     for (let i = allFlashcards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [allFlashcards[i], allFlashcards[j]] = [allFlashcards[j], allFlashcards[i]];
@@ -352,7 +336,6 @@ export default function TelaMaterias() {
         {isPageLoading ? (
             <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
         ) : subjects.length === 0 ? (
-          // EMPTY STATE
           <View style={styles.emptyContainer}>
             <BookOpen color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
             <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
@@ -363,17 +346,25 @@ export default function TelaMaterias() {
             </Text>
           </View>
         ) : (
-          // LISTA DE CARDS (Restaurada e conectada ao array subjects)
           <View style={styles.grid}>
             {subjects.map((subject) => {
-               // Garante cor válida
                const cardColor = subject.cor || theme.card; 
                const textColor = getTextColorForBackground(cardColor === theme.card ? '#FFFFFF' : cardColor);
                
                return (
+                // AQUI ESTÁ A CORREÇÃO PRINCIPAL: Passando parâmetros (cor, nome, descricao)
                 <Link 
                   key={subject.id} 
-                  href={`/(tabs)/materias/${subject.id}`} 
+                  href={{
+                    pathname: "/(tabs)/materias/[id]",
+                    params: { 
+                      id: subject.id,
+                      // Removemos o '#' porque a URL pode não codificar corretamente se não usarmos o objeto params
+                      cor: cardColor.replace('#', ''), 
+                      nome: subject.nome,
+                      descricao: subject.descricao || ''
+                    }
+                  }}
                   asChild
                 >
                   <Pressable>
@@ -387,7 +378,7 @@ export default function TelaMaterias() {
                           <View style={{ flexDirection: 'row', gap: 8 }}>
                             <TouchableOpacity 
                               onPress={(e) => {
-                                e.stopPropagation(); // Evita navegar ao clicar em editar
+                                e.stopPropagation(); 
                                 openEditDialog(subject);
                               }}
                               style={{ padding: 4 }}
@@ -396,7 +387,7 @@ export default function TelaMaterias() {
                             </TouchableOpacity>
                             <TouchableOpacity 
                               onPress={(e) => {
-                                e.stopPropagation(); // Evita navegar ao clicar em deletar
+                                e.stopPropagation(); 
                                 handleDelete(subject.id);
                               }}
                               style={{ padding: 4 }}
