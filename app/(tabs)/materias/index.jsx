@@ -4,7 +4,9 @@ import {
   Edit, 
   Plus, 
   Trash2, 
-  BookOpen
+  BookOpen,
+  Shuffle, // Ícone para a revisão mista
+  Layers   // Ícone alternativo
 } from 'lucide-react-native';
 import { useState } from 'react'; 
 import {
@@ -33,25 +35,11 @@ import { useAuth } from '../../../contexto/AuthContexto';
 import { useSubjects } from '../../../contexto/SubjectContexto'; 
 import { cores } from '../../../tema/cores';
 
-function getTextColorForBackground(hexColor) {
-  try {
-    const hex = hexColor.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-    return luminance > 180 ? cores.light.foreground : cores.light.primaryForeground;
-  } catch (e) {
-    return cores.light.foreground;
-  }
-}
-
 // Header do Mascote
 function MascotHeader({ user, theme }) {
   return (
     <View style={styles.mascotSection}>
       <View style={styles.mascotContainer}>
-        {/* Espaço para a imagem do Tubarão */}
         <View style={[styles.mascotPlaceholder, { backgroundColor: theme.primary + '15', borderColor: theme.primary }]}>
             <BookOpen size={32} color={theme.primary} />
             <Text style={{fontSize: 10, color: theme.primary, fontWeight:'bold', marginTop: 4}}>PROF. TUBARÃO</Text>
@@ -79,7 +67,8 @@ export default function TelaMaterias() {
     isLoading: isContextLoading, 
     addSubject, 
     updateSubject, 
-    deleteSubject 
+    deleteSubject,
+    getFlashcardsBySubject // Necessário para a revisão mista
   } = useSubjects();
   
   const router = useRouter();
@@ -91,6 +80,32 @@ export default function TelaMaterias() {
   const [editingSubject, setEditingSubject] = useState(null);
   const [formData, setFormData] = useState({ nome: '', descricao: '', cor: theme.primary });
   const [isSaving, setIsSaving] = useState(false);
+
+  // --- Lógica da Revisão Mista ---
+  const handleMixedReview = () => {
+    // 1. Coleta todos os flashcards de todas as matérias
+    const allFlashcards = subjects.flatMap(subject => {
+        const cards = getFlashcardsBySubject(subject.id) || [];
+        return cards.map(card => ({
+            ...card,
+            materiaNome: subject.nome, // Adiciona o nome da matéria para exibir no card
+            cor: subject.cor || theme.primary
+        }));
+    });
+
+    // 2. Valida se existem cards
+    if (allFlashcards.length === 0) {
+        Alert.alert('Ops!', 'Você precisa criar flashcards dentro das matérias antes de iniciar uma revisão mista.');
+        return;
+    }
+
+    // 3. Navega enviando o deck completo
+    router.push({
+        pathname: '/(tabs)/materias/revisao',
+        params: { deck: JSON.stringify(allFlashcards) }
+    });
+  };
+  // -------------------------------
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
@@ -196,10 +211,30 @@ export default function TelaMaterias() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* 1. MASCOTE (Agora é o primeiro elemento) */}
+        {/* 1. MASCOTE */}
         <MascotHeader user={user} theme={theme} />
 
-        {/* 2. LISTA DE MATÉRIAS */}
+        {/* 2. BOTÃO DE REVISÃO MISTA (NOVO) */}
+        {subjects.length > 0 && (
+            <TouchableOpacity 
+                style={[styles.mixedReviewButton, { backgroundColor: theme.card, borderColor: theme.primary }]}
+                onPress={handleMixedReview}
+                activeOpacity={0.8}
+            >
+                <View style={[styles.mixedIconBox, { backgroundColor: theme.primary + '20' }]}>
+                    <Shuffle size={24} color={theme.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                    <Text style={[styles.mixedTitle, { color: theme.foreground }]}>Revisão Mista</Text>
+                    <Text style={[styles.mixedSubtitle, { color: theme.mutedForeground }]}>
+                        Misturar todos os cards
+                    </Text>
+                </View>
+                <Layers size={20} color={theme.mutedForeground} style={{ opacity: 0.5 }} />
+            </TouchableOpacity>
+        )}
+
+        {/* 3. LISTA DE MATÉRIAS */}
         <View style={styles.listHeaderRow}>
             <Text style={[styles.sectionTitle, { color: theme.foreground }]}>
                 Minhas Matérias ({subjects.length})
@@ -346,7 +381,7 @@ const styles = StyleSheet.create({
   mascotSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 8,
     marginTop: 10,
   },
   mascotContainer: {
@@ -379,6 +414,37 @@ const styles = StyleSheet.create({
   speechText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+
+  // BOTÃO MISTA (NOVO)
+  mixedReviewButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
+      borderRadius: 16,
+      borderWidth: 1,
+      marginBottom: 10,
+      gap: 16,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+  },
+  mixedIconBox: {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+  },
+  mixedTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      marginBottom: 2,
+  },
+  mixedSubtitle: {
+      fontSize: 13,
   },
 
   // LISTA

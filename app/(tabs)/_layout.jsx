@@ -1,6 +1,7 @@
+// app/(tabs)/_layout.jsx
 import { Tabs } from 'expo-router';
 import { View, useColorScheme, StyleSheet } from 'react-native';
-import { BookOpen, Home, Target, Timer, Calendar } from 'lucide-react-native';
+import { BookOpen, Home, Award, Timer, Calendar } from 'lucide-react-native'; // Alterado: Target -> Award
 import { cores } from '../../tema/cores';
 
 export default function TabsLayout() {
@@ -11,16 +12,16 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false, // Sem texto, apenas ícones (mais limpo)
-        tabBarActiveTintColor: theme.primary, // Azul Ciano
-        tabBarInactiveTintColor: theme.mutedForeground, // Cinza
+        tabBarShowLabel: false,
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.mutedForeground,
         tabBarStyle: [
           styles.tabBar,
           { 
             backgroundColor: theme.card, 
-            borderTopColor: theme.border, // Borda fina e elegante
-            borderTopWidth: 1, // Borda superior apenas (estilo iOS moderno)
-            elevation: 0, // Remove sombra pesada no Android para ficar "flat"
+            borderTopColor: theme.border,
+            borderTopWidth: 1,
+            elevation: 0,
           },
         ],
       }}
@@ -45,7 +46,6 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* BOTÃO CENTRAL - Minimalista e Moderno */}
       <Tabs.Screen
         name="pomodoro"
         options={{
@@ -55,8 +55,7 @@ export default function TabsLayout() {
               style={[
                 styles.centralButton,
                 {
-                  backgroundColor: theme.primary, // Fundo Azul Ciano Sólido
-                  // Sombra colorida (Glow)
+                  backgroundColor: theme.primary,
                   shadowColor: theme.primary,
                   elevation: 8,
                 },
@@ -73,7 +72,8 @@ export default function TabsLayout() {
         options={{
           title: 'Metas',
           tabBarIcon: ({ color, focused }) => (
-            <Target size={26} color={color} strokeWidth={focused ? 2.5 : 2} />
+            // AQUI ESTÁ A MUDANÇA: Award (Medalha) em vez de Target
+            <Award size={26} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
         }}
       />
@@ -98,19 +98,17 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: 60, // Altura padrão mais confortável
-    paddingBottom: 5, // Espaço inferior
+    height: 60,
+    paddingBottom: 5,
     paddingTop: 5,
   },
   centralButton: {
-    width: 56, // Um pouco menor e mais discreto
+    width: 56,
     height: 56,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20, // Sobe um pouco
-    
-    // Efeito de "Glow" (Brilho) no iOS
+    marginBottom: 20,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
