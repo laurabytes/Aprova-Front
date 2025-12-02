@@ -11,12 +11,17 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: theme.primary,
-        tabBarInactiveTintColor: theme.mutedForeground,
+        tabBarShowLabel: false, // Sem texto, apenas ícones (mais limpo)
+        tabBarActiveTintColor: theme.primary, // Azul Ciano
+        tabBarInactiveTintColor: theme.mutedForeground, // Cinza
         tabBarStyle: [
           styles.tabBar,
-          { backgroundColor: theme.card, borderTopColor: 'transparent', shadowColor: theme.foreground },
+          { 
+            backgroundColor: theme.card, 
+            borderTopColor: theme.border, // Borda fina e elegante
+            borderTopWidth: 1, // Borda superior apenas (estilo iOS moderno)
+            elevation: 0, // Remove sombra pesada no Android para ficar "flat"
+          },
         ],
       }}
     >
@@ -25,50 +30,50 @@ export default function TabsLayout() {
         options={{
           title: 'Início',
           tabBarIcon: ({ color, focused }) => (
-            <Home size={focused ? 26 : 22} color={color} />
+            <Home size={26} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
         }}
       />
 
       <Tabs.Screen
-        name="materias/index" // Movido para a 2ª posição
+        name="materias/index"
         options={{
           title: 'Matérias',
           tabBarIcon: ({ color, focused }) => (
-            <BookOpen size={focused ? 26 : 22} color={color} />
+            <BookOpen size={26} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
         }}
       />
 
-      {/* BOTÃO CENTRAL POMODORO (agora é o 3º na ordem) */}
+      {/* BOTÃO CENTRAL - Minimalista e Moderno */}
       <Tabs.Screen
         name="pomodoro"
         options={{
           title: 'Pomodoro',
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ focused }) => (
             <View
               style={[
                 styles.centralButton,
                 {
-                  // Usa as cores do tema para o botão central
-                  backgroundColor: focused ? theme.primary : theme.primary + '30',
+                  backgroundColor: theme.primary, // Fundo Azul Ciano Sólido
+                  // Sombra colorida (Glow)
                   shadowColor: theme.primary,
+                  elevation: 8,
                 },
               ]}
             >
-              <Timer size={30} color={focused ? theme.primaryForeground : theme.primary} />
+              <Timer size={28} color="#FFFFFF" strokeWidth={2.5} />
             </View>
           ),
         }}
       />
 
-      {/* Objetivos (agora é um botão normal) */}
       <Tabs.Screen
         name="objetivos"
         options={{
           title: 'Metas',
           tabBarIcon: ({ color, focused }) => (
-            <Target size={focused ? 26 : 22} color={color} />
+            <Target size={26} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
         }}
       />
@@ -78,66 +83,36 @@ export default function TabsLayout() {
         options={{
           title: 'Planejador',
           tabBarIcon: ({ color, focused }) => (
-            <Calendar size={focused ? 26 : 22} color={color} />
+            <Calendar size={26} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
         }}
       />
       
-      {/* As rotas com href: null e headerShown: false continuam no final */}
-
-      <Tabs.Screen
-        name="materias/[id]"
-        options={{
-          href: null,
-          headerShown: false,
-          title: 'Flashcards',
-        }}
-      />
-
-      <Tabs.Screen
-        name="materias/revisao"
-        options={{
-          href: null,
-          headerShown: false,
-          title: 'Revisão Mista',
-        }}
-      />
-
-      <Tabs.Screen
-        name="minha-conta"
-        options={{
-          href: null,
-          headerShown: false,
-          title: 'Minha Conta',
-        }}
-      />
+      {/* Rotas ocultas */}
+      <Tabs.Screen name="materias/[id]" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="materias/revisao" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="minha-conta" options={{ href: null, headerShown: false }} />
     </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
   tabBar: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
-    borderRadius: 24,
-    height: 64,
-    elevation: 10,
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: -2 },
-    shadowRadius: 6,
+    height: 60, // Altura padrão mais confortável
+    paddingBottom: 5, // Espaço inferior
+    paddingTop: 5,
   },
   centralButton: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 56, // Um pouco menor e mais discreto
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24, // faz o botão central "saltar" um pouco pra cima
-    elevation: 5,
-    shadowOpacity: 0.3,
+    marginBottom: 20, // Sobe um pouco
+    
+    // Efeito de "Glow" (Brilho) no iOS
     shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 6,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
 });

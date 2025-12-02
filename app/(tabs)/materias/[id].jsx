@@ -12,16 +12,13 @@ import {
   useColorScheme,
   View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Botao } from '../../../componentes/Botao';
-// ...
 import { Card, CardContent, CardHeader, CardTitle } from '../../../componentes/Card';
 import { Dialog } from '../../../componentes/Dialog';
 import { Textarea } from '../../../componentes/Textarea';
-import { useSubjects } from '../../../contexto/SubjectContexto'; // NOVO: Importar useSubjects
+import { useSubjects } from '../../../contexto/SubjectContexto';
 import { cores } from '../../../tema/cores';
-
-// MOCK_DATA REMOVIDO
 
 function getTextColorForBackground(hexColor) {
   try {
@@ -40,7 +37,6 @@ export default function TelaFlashcards() {
   const params = useLocalSearchParams();
   const router = useRouter();
   
-  // USAR CONTEXTO: Obter funções de flashcard e o array de flashcards
   const { 
     getFlashcardsBySubject, 
     addFlashcard, 
@@ -50,7 +46,6 @@ export default function TelaFlashcards() {
   
   const { id: subjectId, cor: corParam, nome: nomeParam, descricao: descricaoParam } = params;
   
-  // A lista de flashcards é puxada diretamente do contexto
   const flashcards = getFlashcardsBySubject(subjectId); 
 
   const scheme = useColorScheme();
@@ -68,7 +63,6 @@ export default function TelaFlashcards() {
   const [textColor, setTextColor] = useState(theme.foreground);
 
   useEffect(() => {
-    // Processamento dos parâmetros (Nome, Cor, Descrição)
     const decodedColor = corParam ? `#${corParam}` : theme.card;
     const decodedName = nomeParam ? nomeParam : 'Matéria';
     const decodedDescription = descricaoParam ? descricaoParam : 'Flashcards para revisão';
@@ -92,11 +86,9 @@ export default function TelaFlashcards() {
     }
       
     setIsLoading(true);
-    // await new Promise(res => setTimeout(res, 300)); // (Opcional: removi o delay artificial para ficar mais rápido)
     
     try {
       if (editingFlashcard) {
-        // CORREÇÃO: Adicionado 'await' para esperar a atualização terminar
         await updateFlashcard(subjectId, { ...editingFlashcard, ...formData });
       } else {
         const newFlashcard = {
@@ -104,11 +96,9 @@ export default function TelaFlashcards() {
           id: Date.now().toString(),
           materiaId: subjectId,
         };
-        // CORREÇÃO: Adicionado 'await' para esperar a criação terminar
         await addFlashcard(subjectId, newFlashcard);
       }
       
-      // Só fecha e limpa se der tudo certo (passar pelo await sem erro)
       setIsDialogOpen(false);
       setFormData({ pergunta: '', resposta: '' });
       setEditingFlashcard(null);
@@ -174,7 +164,6 @@ export default function TelaFlashcards() {
             <ArrowLeft color={theme.foreground} size={24} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            
             <Text style={[styles.title, { color: theme.foreground }]} numberOfLines={1}>{subject?.nome}</Text>
             <Text style={[styles.subtitle, { color: theme.mutedForeground }]}>
               {subject?.descricao || 'Flashcards para revisão'}
@@ -219,9 +208,7 @@ export default function TelaFlashcards() {
         </Dialog>
 
         {flashcards.length === 0 ? (
-          // NOVO ESTADO VAZIO (IDÊNTICO À TELA DE MATÉRIAS)
           <View style={styles.emptyContainer}>
-            {/* Ícone usado na tela de flashcard */}
             <FlipHorizontal color={theme.mutedForeground} size={48} style={styles.emptyIcon} /> 
             <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
               Nenhum flashcard cadastrado
@@ -247,7 +234,11 @@ export default function TelaFlashcards() {
                     </TouchableOpacity>
                   </View>
                 </CardHeader>
-                <CardContent style={{ gap: 16 }}>
+                
+                {/* ALTERAÇÃO AQUI: 
+                    Adicionado paddingBottom: 24 para dar espaço ao botão e centralizá-lo melhor.
+                */}
+                <CardContent style={{ gap: 16, paddingBottom: 24 }}>
                   <Text style={[styles.flashcardText, { color: textColor }]}>
                     {flippedCards.has(flashcard.id) ? flashcard.resposta : flashcard.pergunta}
                   </Text>
@@ -301,19 +292,17 @@ const styles = StyleSheet.create({
     minHeight: 80,
     fontSize: 16,
   },
-  // INÍCIO DOS NOVOS ESTILOS PARA EMPTY STATE (Copiado do index.jsx)
   emptyContainer: { 
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 48,
     gap: 16,
-    minHeight: 300, // Garante que o container tenha um tamanho mínimo
+    minHeight: 300, 
   },
   emptyIcon: { marginBottom: 16, opacity: 0.8 }, 
-  emptyTitle: { fontSize: 22, fontWeight: '700' }, // Tamanho ajustado para index.jsx
-  emptyText: { textAlign: 'center', fontSize: 16, marginBottom: 16 }, // Novo texto de descrição
-  // FIM DOS NOVOS ESTILOS PARA EMPTY STATE
+  emptyTitle: { fontSize: 22, fontWeight: '700' }, 
+  emptyText: { textAlign: 'center', fontSize: 16, marginBottom: 16 }, 
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 16 },
   form: { gap: 12 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },

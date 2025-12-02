@@ -67,12 +67,10 @@ export default function TelaMaterias() {
 
   // --- FUNÇÃO PARA CARREGAR MATÉRIAS DA API ---
   const loadMaterias = async () => {
-    // 💡 CORREÇÃO 1: Evita chamada com ID undefined
     if (!user || !user.id) return;
 
     try {
       setIsPageLoading(true);
-      // 💡 CORREÇÃO 2: Passa o ID do usuário para o serviço
       const data = await MateriaService.listar(user.id);
       setSubjects(data || []);
     } catch (error) {
@@ -84,7 +82,6 @@ export default function TelaMaterias() {
   };
 
   useFocusEffect(
-    // 💡 CORREÇÃO 3: Adiciona 'user' como dependência para recarregar ao logar
     useCallback(() => {
       loadMaterias();
     }, [user])
@@ -377,7 +374,8 @@ export default function TelaMaterias() {
                   asChild
                 >
                   <Pressable>
-                    <Card style={[styles.card, { borderLeftColor: cardColor, borderLeftWidth: 6 }]}>
+                    {/* AQUI ESTÁ A ALTERAÇÃO: borderLeftWidth mudou de 6 para 12 */}
+                    <Card style={[styles.card, { borderLeftColor: cardColor, borderLeftWidth: 25}]}>
                       <CardHeader>
                         <View style={styles.cardTitleRow}>
                           <CardTitle style={{ color: theme.foreground }}>
@@ -474,7 +472,7 @@ const styles = StyleSheet.create({
   emptyText: { textAlign: 'center', fontSize: 16, marginBottom: 16 },
   fabButton: {
     position: 'absolute',
-    bottom: 96, 
+    bottom: 24, 
     right: 20,
     width: 60,
     height: 60,

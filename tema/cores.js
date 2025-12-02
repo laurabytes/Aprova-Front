@@ -1,42 +1,33 @@
 // tema/cores.js
 
-// Estas são as cores "traduzidas" do seu site (testando-react)
-// para o React Native. Vamos focar no modo claro primeiro.
-
 export const cores = {
-  // Modo Claro (Light)
+  // Modo Claro: Branco, Cinza e Azul Vibrante
   light: {
-    background: '#fcfcfc', // Fundo principal
-    foreground: '#262626', // Texto principal
-    card: '#FFFFFF',       // Fundo dos cards
-    primary: '#3b82f6',    // Azul (Botões, links)
-    primaryForeground: '#FFFFFF', // Texto do botão azul
-    border: '#e5e5e5',     // Bordas
-    input: '#e5e5e5',      // Borda do Input
-    muted: '#f4f4f5',      // Fundo sutil (ex: tags)
-    mutedForeground: '#737373', // Texto sutil (descrições)
-    destructive: '#ef4444', // Vermelho (perigo, apagar)
-    // ==============================================================
-    // ADICIONADO AQUI
-    // ==============================================================
-    destructiveLight: '#fca5a5', // Um vermelho claro (Tailwind red-300) para contraste em fundos escuros
+    background: '#FFFFFF',        // Branco puro (Clean)
+    foreground: '#09090B',        // Preto quase absoluto para texto (leitura fácil)
+    card: '#FAFAFA',              // Um cinza super leve apenas para delimitar
+    primary: '#2693BE',           // SEU AZUL CIANO (A estrela do design)
+    primaryForeground: '#FFFFFF', // Texto branco no botão
+    border: '#E4E4E7',            // Bordas cinza claro
+    input: '#FFFFFF',             // Input branco com borda
+    muted: '#F4F4F5',             // Cinza para fundos secundários
+    mutedForeground: '#71717A',   // Texto cinza médio
+    destructive: '#EF4444',       // Vermelho padrão (mais profissional que o laranja)
+    destructiveLight: '#FEE2E2',  
   },
   
-  // Modo Escuro (Dark)
+  // Modo Escuro: "True Black" com toques de Neon
   dark: {
-    background: '#0c0c0c',
-    foreground: '#f2f2f2',
-    card: '#1a1a1a',
-    primary: '#60a5fa',
-    primaryForeground: '#fcfcfc',
-    border: '#404040',
-    input: '#404040',
-    muted: '#333333',
-    mutedForeground: '#999999',
-    destructive: '#ef4444',
-    // ==============================================================
-    // ADICIONADO AQUI TAMBÉM
-    // ==============================================================
-    destructiveLight: '#fca5a5',
+    background: '#000000',        // Preto Real (Economia de bateria + Estilo)
+    foreground: '#EDEDED',        // Branco levemente "off" (menos cansativo)
+    card: '#121212',              // Padrão Material Design (Grafite escuro)
+    primary: '#2693BE',           // O Ciano brilha muito no fundo preto
+    primaryForeground: '#FFFFFF', 
+    border: '#27272A',            // Bordas sutis
+    input: '#18181B',             // Um pouco mais claro que o fundo
+    muted: '#27272A',             // Cinza escuro para elementos inativos
+    mutedForeground: '#A1A1AA',   // Cinza metálico
+    destructive: '#FF453A',       // Vermelho iOS Dark
+    destructiveLight: '#450a0a',  
   },
 };

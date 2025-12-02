@@ -1,7 +1,6 @@
-// app/(tabs)/perfil.jsx -> PLANEJADOR SEMANAL MOBILE
-
-import { Plus, Edit, Trash2, Calendar } from 'lucide-react-native'; 
-import React, { useState } from 'react';
+// app/(tabs)/perfil.jsx
+import { Plus, Edit, Trash2, Calendar, Clock, ChevronUp, ChevronDown } from 'lucide-react-native'; 
+import React, { useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,49 +10,114 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
-  Dimensions,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
-// Importação do SegmentedControl para a seleção de dia na tela principal
-// ...
-// Importação do SegmentedControl para a seleção de dia na tela principal
+import { SafeAreaView } from 'react-native-safe-area-context';
 import SegmentedControl from '@react-native-segmented-control/segmented-control'; 
+import { useFocusEffect } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
 import { Botao } from '../../componentes/Botao';
 import { CampoDeTexto } from '../../componentes/CampoDeTexto';
 import { Card } from '../../componentes/Card';
 import { Dialog } from '../../componentes/Dialog';
-// Importação do Select e SelectItem para o formulário de edição/criação
 import { Select, SelectItem } from '../../componentes/Select'; 
 import { cores } from '../../tema/cores';
 
-// CORREÇÃO: Inicializa o MOCK_ROUTINE como uma matriz vazia []
-const MOCK_ROUTINE = [];
+import { useAuth } from '../../contexto/AuthContexto';
+import PlanejadorService from '../../servicos/PlanejadorService';
 
 const DIAS_DA_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
-// ==============================================================
-// 1. LÓGICA DE GERENCIAMENTO DE ESTADO E AGRUPAMENTO
-// ==============================================================
+export default function TelaPlanejadorSemanal() {
+  const { user } = useAuth();
+  const theme = cores[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  
+  const initialDayIndex = Math.max(0, DIAS_DA_SEMANA.indexOf(new Date().toLocaleDateString('pt-BR', { weekday: 'long' }).split('-')[0].charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { weekday: 'long' }).split('-')[0].slice(1)));
+  const [selectedDayIndex, setSelectedDayIndex] = useState(initialDayIndex); 
+  const selectedDay = DIAS_DA_SEMANA[selectedDayIndex];
 
-function useRoutineManager(initialRoutine) {
-  const [routine, setRoutine] = useState(initialRoutine);
+  const [routine, setRoutine] = useState([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   
-  const formatDuration = (minutes) => {
-    if (minutes % 60 === 0) return `${minutes / 60}h`;
-    return `${minutes}min`;
+  // Controles de visibilidade dos Pickers (Seletores)
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
+
+  const [formData, setFormData] = useState({
+    dia: selectedDay,
+    horario: '08:00', // HH:MM
+    duracao: '2h 00min', 
+    materia: '',
+  });
+
+  // --- Helpers de Conversão ---
+  const parseTimeString = (timeStr) => {
+    if (!timeStr) return new Date();
+    const [h, m] = timeStr.split(':');
+    const d = new Date();
+    d.setHours(parseInt(h) || 0, parseInt(m) || 0, 0, 0);
+    return d;
   };
 
-  const formatItemForDisplay = (item) => ({
-    ...item,
-    horario: `${item.hora.toString().padStart(2, '0')}:${item.min.toString().padStart(2, '0')}`,
-    duracao: formatDuration(item.duracao),
-  });
-  
-  const getFilteredAndSortedRoutine = (selectedDay) => {
+  const parseDurationString = (durStr) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    const hMatch = durStr.match(/(\d+)h/);
+    const mMatch = durStr.match(/(\d+)min/);
+    
+    let hours = hMatch ? parseInt(hMatch[1]) : 0;
+    let minutes = mMatch ? parseInt(mMatch[1]) : 0;
+    
+    if (!hMatch && !mMatch && !isNaN(parseInt(durStr))) {
+        hours = Math.floor(parseInt(durStr) / 60);
+        minutes = parseInt(durStr) % 60;
+    } else if (!hMatch && !mMatch) {
+        hours = 2; minutes = 0;
+    }
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+  };
+
+  const loadRoutine = async () => {
+    if (!user || !user.id) return;
+    try {
+        setIsLoadingData(true);
+        const data = await PlanejadorService.listarPorUsuario(user.id);
+        setRoutine(data || []);
+    } catch (error) {
+        console.error("Erro ao carregar rotina", error);
+    } finally {
+        setIsLoadingData(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRoutine();
+    }, [user])
+  );
+
+  const formatDuration = (minutes) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}min`;
+    if (h > 0) return `${h}h`;
+    return `${m}min`;
+  };
+
+  const getFilteredAndSortedRoutine = (day) => {
     return routine
-      .filter(item => item.dia === selectedDay)
-      .map(formatItemForDisplay)
+      .filter(item => item.dia === day)
+      .map(item => ({
+        ...item,
+        horarioDisplay: `${item.hora.toString().padStart(2, '0')}:${item.min.toString().padStart(2, '0')}`,
+        duracaoDisplay: formatDuration(item.duracao),
+      }))
       .sort((a, b) => {
         const timeA = a.hora * 60 + a.min;
         const timeB = b.hora * 60 + b.min;
@@ -61,183 +125,141 @@ function useRoutineManager(initialRoutine) {
       });
   };
 
-  const deleteItem = (id) => {
-    Alert.alert('Excluir Item', 'Tem certeza que deseja remover este bloco de estudo?', [
+  const filteredRoutine = getFilteredAndSortedRoutine(selectedDay);
+
+  // --- Handlers de Picker ---
+
+  const toggleTimePicker = () => {
+    setShowDurationPicker(false); // Fecha o outro se estiver aberto
+    setShowTimePicker(prev => !prev);
+  };
+
+  const toggleDurationPicker = () => {
+    setShowTimePicker(false); // Fecha o outro se estiver aberto
+    setShowDurationPicker(prev => !prev);
+  };
+
+  const onTimeChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') {
+        setShowTimePicker(false);
+    }
+    
+    if (selectedDate) {
+        const hours = selectedDate.getHours().toString().padStart(2, '0');
+        const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
+        setFormData({ ...formData, horario: `${hours}:${minutes}` });
+    }
+  };
+
+  const onDurationChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') {
+        setShowDurationPicker(false);
+    }
+
+    if (selectedDate) {
+        const h = selectedDate.getHours();
+        const m = selectedDate.getMinutes();
+        setFormData({ ...formData, duracao: `${h}h ${m}min` });
+    }
+  };
+
+  // --- Salvar e Deletar ---
+
+  const handleSave = async () => {
+    const [horaStr, minStr] = formData.horario.split(':');
+    const hora = parseInt(horaStr, 10);
+    const min = parseInt(minStr, 10) || 0;
+    
+    if (!formData.materia.trim()) {
+        Alert.alert('Erro', 'O nome da matéria é obrigatório.');
+        return;
+    }
+
+    const durDate = parseDurationString(formData.duracao);
+    const duracaoMinutos = (durDate.getHours() * 60) + durDate.getMinutes();
+
+    if (duracaoMinutos === 0) {
+        Alert.alert('Erro', 'A duração não pode ser zero.');
+        return;
+    }
+
+    setIsSaving(true);
+
+    try {
+        const payload = {
+            dia: formData.dia,
+            hora: hora,
+            min: min,
+            duracao: duracaoMinutos,
+            materia: formData.materia,
+            usuarioId: user.id
+        };
+
+        if (editingItem) {
+            await PlanejadorService.atualizar(editingItem.id, payload);
+        } else {
+            await PlanejadorService.criar(payload);
+        }
+
+        await loadRoutine();
+        handleCloseDialog();
+
+    } catch (error) {
+        console.error(error);
+        Alert.alert('Erro', 'Não foi possível salvar.');
+    } finally {
+        setIsSaving(false);
+    }
+  };
+
+  const handleDelete = (id) => {
+    Alert.alert('Excluir Item', 'Tem certeza que deseja remover?', [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Excluir',
           style: 'destructive',
-          onPress: () => {
-            setRoutine(prev => prev.filter(i => i.id !== id));
+          onPress: async () => {
+            try {
+                await PlanejadorService.apagar(id);
+                setRoutine(prev => prev.filter(item => item.id !== id));
+            } catch (error) {
+                Alert.alert('Erro', 'Falha ao excluir.');
+            }
           },
         },
       ]);
   };
 
-  const saveItem = (formData, currentEditingItem) => {
-    const [horaStr, minStr] = formData.horario.split(':');
-    const hora = parseInt(horaStr, 10);
-    const min = parseInt(minStr, 10) || 0;
-    
-    let duracaoMinutos = 60;
-    const duracaoMatch = formData.duracao.match(/(\d+)(h|min)/);
-    if (duracaoMatch) {
-      const value = parseInt(duracaoMatch[1], 10);
-      const unit = duracaoMatch[2];
-      duracaoMinutos = unit === 'h' ? value * 60 : value;
-    }
-    
-    if (isNaN(hora) || hora < 0 || hora > 23 || isNaN(min) || min < 0 || min > 59) {
-        throw new Error('O formato do horário deve ser HH:MM (Ex: 14:00)');
-    }
-
-    const dadosSalvos = {
-        id: currentEditingItem ? currentEditingItem.id : Math.random(),
-        dia: formData.dia,
-        hora,
-        min,
-        duracao: duracaoMinutos, 
-        materia: formData.materia.trim(),
-    };
-
-    if (currentEditingItem) {
-        setRoutine(prev =>
-            prev.map(i => (i.id === currentEditingItem.id ? dadosSalvos : i)),
-        );
-    } else {
-        setRoutine(prev => [...prev, dadosSalvos]);
-    }
-  };
-
-  return {
-    routine,
-    getFilteredAndSortedRoutine,
-    deleteItem,
-    saveItem,
-    editingItem,
-    setEditingItem,
-    formatDuration,
-    formatItemForDisplay
-  };
-}
-
-// ==============================================================
-// 2. COMPONENTE DE ITEM DA ROTINA
-// ==============================================================
-
-function RoutineItem({ item, theme, openEditDialog, handleDelete }) {
-    // Calcula o horário final
-    const endHour = Math.floor((item.hora * 60 + item.min + item.duracao) / 60) % 24;
-    const endMin = (item.hora * 60 + item.min + item.duracao) % 60;
-
-    return (
-        <Card style={styles.routineCard}>
-            <View style={styles.cardHeaderTime}>
-                <Text style={[styles.cardTime, { color: theme.primary }]}>
-                    {item.horario} - {endHour.toString().padStart(2, '0')}:{endMin.toString().padStart(2, '0')}
-                </Text>
-                <Text style={[styles.cardDuration, { color: theme.mutedForeground }]}>
-                    {item.duracao}
-                </Text>
-            </View>
-            <View style={styles.cardContentSubject}>
-                <Text style={[styles.cardSubject, { color: theme.foreground }]} numberOfLines={2}>
-                    {item.materia}
-                </Text>
-                
-                <View style={styles.routineActions}>
-                    <TouchableOpacity onPress={() => openEditDialog(item)} style={{padding: 4}}>
-                        <Edit color={theme.mutedForeground} size={18} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(item.id)} style={{padding: 4}}>
-                        <Trash2 color={theme.destructive} size={18} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </Card>
-    );
-}
-
-
-// ==============================================================
-// 3. COMPONENTE PRINCIPAL DA TELA (Planejador)
-// ==============================================================
-
-export default function TelaPlanejadorSemanal() {
-  const scheme = useColorScheme();
-  const theme = cores[scheme === 'dark' ? 'dark' : 'light'];
-  
-  // Encontra o índice do dia atual para o SegmentedControl iniciar no dia correto
-  const initialDayIndex = Math.max(0, DIAS_DA_SEMANA.indexOf(new Date().toLocaleDateString('pt-BR', { weekday: 'long' }).split('-')[0].charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { weekday: 'long' }).split('-')[0].slice(1)));
-
-  const [selectedDayIndex, setSelectedDayIndex] = useState(initialDayIndex); 
-  const selectedDay = DIAS_DA_SEMANA[selectedDayIndex];
-
-  const {
-    routine,
-    getFilteredAndSortedRoutine,
-    deleteItem,
-    saveItem,
-    editingItem,
-    setEditingItem
-  } = useRoutineManager(MOCK_ROUTINE);
-  
-  const filteredRoutine = getFilteredAndSortedRoutine(selectedDay);
-  
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    dia: selectedDay,
-    horario: '08:00', // HH:MM
-    duracao: '2h',   // Ex: 2h, 90min
-    materia: '',
-  });
-
   const handleOpenDialog = (item = null) => {
+    setShowTimePicker(false);
+    setShowDurationPicker(false);
+
     if (item) {
         setEditingItem(item);
-        const duracaoString = item.duracao >= 60 && item.duracao % 60 === 0 
-                               ? `${item.duracao / 60}h` 
-                               : `${item.duracao}min`;
+        const h = Math.floor(item.duracao / 60);
+        const m = item.duracao % 60;
         
         setFormData({
-            id: item.id,
             dia: item.dia,
             horario: `${item.hora.toString().padStart(2, '0')}:${item.min.toString().padStart(2, '0')}`,
-            duracao: duracaoString,
+            duracao: `${h}h ${m}min`,
             materia: item.materia,
         });
     } else {
         setEditingItem(null);
-        setFormData(prev => ({ 
-            ...prev, 
+        setFormData({ 
             dia: selectedDay, 
             horario: '08:00', 
-            duracao: '2h', 
+            duracao: '2h 00min', 
             materia: '' 
-        }));
+        });
     }
     setIsDialogOpen(true);
-  };
-  
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-        await new Promise(res => setTimeout(res, 300));
-        saveItem(formData, editingItem);
-        handleCloseDialog();
-    } catch (error) {
-        Alert.alert('Erro', error.message || 'Não foi possível salvar.');
-    } finally {
-        setIsLoading(false);
-    }
   };
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
-    setFormData({ dia: selectedDay, horario: '08:00', duracao: '2h', materia: '' });
   };
   
   const handleDayChange = (index) => {
@@ -248,15 +270,13 @@ export default function TelaPlanejadorSemanal() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       
-      {/* Cabeçalho Fixo (Título) - Fundo uniforme e sem borda */}
-      <View style={[styles.headerRow, { backgroundColor: theme.background, borderBottomWidth: 0 }]}>
-          <Text style={[styles.title, { color: theme.foreground }]}>Planejador Semanal</Text>
+      <View style={[styles.headerRow, { backgroundColor: theme.background }]}>
+          <Text style={[styles.title, { color: theme.foreground }]}>Planejador</Text>
       </View>
 
-      {/* Seleção de Dia (Segmented Control Horizontal) - Fundo uniforme e sem borda */}
-      <View style={[styles.daySelectorContainer, { borderBottomWidth: 0, backgroundColor: theme.background }]}>
+      <View style={[styles.daySelectorContainer, { backgroundColor: theme.background }]}>
         <SegmentedControl
-            values={DIAS_DA_SEMANA.map(d => d.substring(0, 3))} // Seg, Ter, Qua, etc.
+            values={DIAS_DA_SEMANA.map(d => d.substring(0, 3))}
             selectedIndex={selectedDayIndex}
             onChange={(event) => handleDayChange(event.nativeEvent.selectedSegmentIndex)}
             style={styles.segmentedControl}
@@ -267,10 +287,10 @@ export default function TelaPlanejadorSemanal() {
         />
       </View>
       
-      {/* Lista de Rotina (Scrollable) */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
-
-        {filteredRoutine.length === 0 ? (
+        {isLoadingData ? (
+            <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
+        ) : filteredRoutine.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Calendar color={theme.mutedForeground} size={48} style={styles.emptyIcon} />
             <Text style={[styles.emptyTitle, { color: theme.foreground }]}>
@@ -285,85 +305,168 @@ export default function TelaPlanejadorSemanal() {
             <Text style={[styles.listSubtitle, { color: theme.mutedForeground }]}>
                 Blocos de estudo para {selectedDay}:
             </Text>
-            {filteredRoutine.map(item => (
-                <RoutineItem 
-                    key={item.id} 
-                    item={item} 
-                    theme={theme} 
-                    openEditDialog={handleOpenDialog}
-                    handleDelete={deleteItem}
-                />
-            ))}
+            {filteredRoutine.map(item => {
+                const endMinutesTotal = (item.hora * 60) + item.min + item.duracao;
+                const endHour = Math.floor(endMinutesTotal / 60) % 24;
+                const endMin = endMinutesTotal % 60;
+
+                return (
+                    <Card key={item.id} style={styles.routineCard}>
+                        <View style={styles.cardHeaderTime}>
+                            <Text style={[styles.cardTime, { color: theme.primary }]}>
+                                {item.horarioDisplay} - {endHour.toString().padStart(2, '0')}:{endMin.toString().padStart(2, '0')}
+                            </Text>
+                            <Text style={[styles.cardDuration, { color: theme.mutedForeground }]}>
+                                {item.duracaoDisplay}
+                            </Text>
+                        </View>
+                        <View style={styles.cardContentSubject}>
+                            <Text style={[styles.cardSubject, { color: theme.foreground }]} numberOfLines={2}>
+                                {item.materia}
+                            </Text>
+                            <View style={styles.routineActions}>
+                                <TouchableOpacity onPress={() => handleOpenDialog(item)} style={{padding: 4}}>
+                                    <Edit color={theme.mutedForeground} size={18} />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => handleDelete(item.id)} style={{padding: 4}}>
+                                    <Trash2 color={theme.destructive} size={18} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Card>
+                );
+            })}
           </View>
         )}
       </ScrollView>
 
-
-      {/* ==============================================================
-          DIALOG / MODAL (Criação e Edição)
-      ============================================================== */}
+      {/* --- FORMULÁRIO --- */}
       <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-        <ScrollView keyboardShouldPersistTaps="handled">
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Text style={[styles.dialogTitle, { color: theme.foreground }]}>
-            {editingItem ? `Editar Bloco - ${editingItem.dia}` : `Novo Bloco`}
+            {editingItem ? `Editar Bloco` : `Novo Bloco`}
           </Text>
           <View style={styles.form}>
               
-            {/* Campo Dia da Semana (SELECT) */}
             <Text style={[styles.label, { color: theme.foreground }]}>Dia da Semana</Text>
             <Select
                 value={formData.dia}
                 onValueChange={(value) => setFormData({ ...formData, dia: value })}
-                prompt="Selecione o Dia da Semana"
+                prompt="Selecione o Dia"
             >
                 {DIAS_DA_SEMANA.map((day) => (
                     <SelectItem key={day} label={day} value={day} />
                 ))}
             </Select>
 
-            {/* Campo Horário */}
-            <Text style={[styles.label, { color: theme.foreground }]}>Horário de Início (HH:MM)</Text>
-            <CampoDeTexto
-              value={formData.horario}
-              onChangeText={(t) => setFormData({ ...formData, horario: t })}
-              placeholder="Ex: 14:00"
-              keyboardType="numbers-and-punctuation" 
-            />
+            {/* SELETOR DE HORÁRIO */}
+            <Text style={[styles.label, { color: theme.foreground }]}>Horário de Início</Text>
+            <TouchableOpacity 
+                style={[
+                    styles.pickerButton, 
+                    { 
+                        borderColor: showTimePicker ? theme.primary : theme.border, 
+                        backgroundColor: theme.card 
+                    }
+                ]}
+                onPress={toggleTimePicker}
+            >
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Clock size={20} color={theme.mutedForeground} style={{marginRight: 8}}/>
+                    <Text style={{ fontSize: 16, color: theme.foreground }}>
+                        {formData.horario}
+                    </Text>
+                </View>
+                {/* Ícone seta para indicar se está aberto */}
+                {Platform.OS === 'ios' && (
+                    showTimePicker 
+                        ? <ChevronUp size={20} color={theme.mutedForeground} /> 
+                        : <ChevronDown size={20} color={theme.mutedForeground} />
+                )}
+            </TouchableOpacity>
+            
+            {/* O picker aparece AQUI DENTRO (Inline) no iOS */}
+            {showTimePicker && (
+                <View style={styles.inlinePickerContainer}>
+                    <DateTimePicker
+                        value={parseTimeString(formData.horario)}
+                        mode="time"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={onTimeChange}
+                        textColor={theme.foreground}
+                        is24Hour={true}
+                        style={Platform.OS === 'ios' ? { height: 120 } : undefined}
+                    />
+                </View>
+            )}
 
-            {/* Campo Duração */}
-            <Text style={[styles.label, { color: theme.foreground }]}>Duração (Ex: 2h ou 90min)</Text>
-            <CampoDeTexto
-              value={formData.duracao}
-              onChangeText={(t) => setFormData({ ...formData, duracao: t })}
-              placeholder="Ex: 2h ou 90min"
-            />
+            {/* SELETOR DE DURAÇÃO */}
+            <Text style={[styles.label, { color: theme.foreground }]}>Duração</Text>
+            <TouchableOpacity 
+                style={[
+                    styles.pickerButton, 
+                    { 
+                        borderColor: showDurationPicker ? theme.primary : theme.border, 
+                        backgroundColor: theme.card 
+                    }
+                ]}
+                onPress={toggleDurationPicker}
+            >
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Clock size={20} color={theme.mutedForeground} style={{marginRight: 8}}/>
+                    <Text style={{ fontSize: 16, color: theme.foreground }}>
+                        {formData.duracao}
+                    </Text>
+                </View>
+                {Platform.OS === 'ios' && (
+                    showDurationPicker 
+                        ? <ChevronUp size={20} color={theme.mutedForeground} /> 
+                        : <ChevronDown size={20} color={theme.mutedForeground} />
+                )}
+            </TouchableOpacity>
 
-            {/* Campo Matéria/Foco */}
-            <Text style={[styles.label, { color: theme.foreground }]}>Matéria/Foco (Ex: UERJ)</Text>
+            {/* O picker aparece AQUI DENTRO (Inline) no iOS */}
+            {showDurationPicker && (
+                <View style={styles.inlinePickerContainer}>
+                    <DateTimePicker
+                        value={parseDurationString(formData.duracao)}
+                        mode="time"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={onDurationChange}
+                        textColor={theme.foreground}
+                        is24Hour={true}
+                        locale="pt-BR"
+                        style={Platform.OS === 'ios' ? { height: 120 } : undefined}
+                    />
+                    <Text style={{fontSize: 12, color: theme.mutedForeground, textAlign: 'center', marginBottom: 8}}>
+                        Selecione as horas e minutos de duração
+                    </Text>
+                </View>
+            )}
+
+            <Text style={[styles.label, { color: theme.foreground }]}>Matéria/Foco</Text>
             <CampoDeTexto
               value={formData.materia}
               onChangeText={(t) => setFormData({ ...formData, materia: t })}
-              placeholder="Ex: História do Brasil, Foco UERJ, Redação"
+              placeholder="Ex: História, Redação..."
             />
             
             <View style={styles.dialogActions}>
               <Botao variant="destructive-outline" onPress={handleCloseDialog} style={{ flex: 1 }}>
                 Cancelar
               </Botao>
-              <Botao onPress={handleSave} disabled={isLoading} style={{ flex: 1 }}>
-                {isLoading ? <ActivityIndicator color={theme.primaryForeground} /> : (editingItem ? 'Salvar Edição' : 'Adicionar')}
+              <Botao onPress={handleSave} disabled={isSaving} style={{ flex: 1 }}>
+                {isSaving ? <ActivityIndicator color={theme.primaryForeground} /> : (editingItem ? 'Salvar' : 'Adicionar')}
               </Botao>
             </View>
           </View>
         </ScrollView>
       </Dialog>
       
-      {/* Botão Flutuante (Criar Novo) */}
       <TouchableOpacity 
         style={[styles.roundFloatingButtonBase, styles.floatingButton, { backgroundColor: theme.primary }]} 
         onPress={() => handleOpenDialog(null)}
       >
-        {/* CORRIGIDO: Alterado o size de 28 para 30 para corresponder às outras telas. */}
         <Plus size={30} color={theme.primaryForeground} />
       </TouchableOpacity>
     </SafeAreaView>
@@ -373,36 +476,18 @@ export default function TelaPlanejadorSemanal() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 120 }, 
-  
-  // --- Cabeçalho e Seleção de Dia ---
   headerRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'flex-start', 
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    borderBottomWidth: 0,
   },
   title: { fontSize: 28, fontWeight: '700' },
-
   daySelectorContainer: {
     paddingHorizontal: 20,
     paddingBottom: 16,
-    borderBottomWidth: 0,
   },
-  segmentedControl: {
-    height: 38,
-  },
-  listSubtitle: {
-    fontSize: 14,
-    marginBottom: 16,
-  },
-
-  // --- Lista de Rotina ---
-  routineList: {
-    marginTop: 16,
-    gap: 12,
-  },
+  segmentedControl: { height: 38 },
+  listSubtitle: { fontSize: 14, marginBottom: 16 },
+  routineList: { marginTop: 16, gap: 12 },
   routineCard: {
       width: '100%',
       padding: 16,
@@ -415,14 +500,8 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       marginBottom: 8,
   },
-  cardTime: {
-      fontSize: 16,
-      fontWeight: '700',
-  },
-  cardDuration: {
-      fontSize: 12,
-      fontWeight: '600',
-  },
+  cardTime: { fontSize: 16, fontWeight: '700' },
+  cardDuration: { fontSize: 12, fontWeight: '600' },
   cardContentSubject: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -434,19 +513,27 @@ const styles = StyleSheet.create({
       flexShrink: 1,
       marginRight: 10,
   },
-  routineActions: {
-      flexDirection: 'row',
-      gap: 4,
-      marginLeft: 'auto',
-  },
-  
-  // --- Dialog/Formulário ---
+  routineActions: { flexDirection: 'row', gap: 4, marginLeft: 'auto' },
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 16 },
   form: { gap: 12 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
-  dialogActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 20 },
   
-  // --- Estado Vazio (Empty State) ---
+  pickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between', // Espalha texto e ícone
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+  },
+  inlinePickerContainer: {
+    overflow: 'hidden', // Ajuda a conter o picker
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  dialogActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 20 },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
@@ -454,29 +541,15 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     gap: 16,
   },
-  emptyIcon: {
-    marginBottom: 16, 
-    opacity: 0.8,
-  },
-  emptyTitle: { 
-    fontSize: 22, 
-    fontWeight: '700',
-    textAlign: 'center', 
-  },
-  emptyText: { 
-    textAlign: 'center',
-    fontSize: 16, 
-    marginBottom: 16, 
-  },
-  
-  // --- Botão Flutuante ---
+  emptyIcon: { marginBottom: 16, opacity: 0.8 },
+  emptyTitle: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
+  emptyText: { textAlign: 'center', fontSize: 16, marginBottom: 16 },
   roundFloatingButtonBase: {
     width: 60,
     height: 60,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    // Propriedades de sombra fortes e corretas (iOS e Android)
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 }, 
     shadowOpacity: 0.3, 
@@ -485,8 +558,7 @@ const styles = StyleSheet.create({
   },
   floatingButton: {
     position: 'absolute',
-    bottom: 96,
+    bottom: 24,
     right: 20,
-    // Removidas as propriedades de sombra redundantes/conflitantes
   },
 });
