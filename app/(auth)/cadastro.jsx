@@ -54,7 +54,7 @@ export default function Cadastro() {
     try {
       await register(nome, email, senha);
       
-      // CORREÇÃO: Mostra mensagem de sucesso e redireciona ao clicar em OK
+    
       Alert.alert(
         "Conta criada!",
         "Seu cadastro foi realizado com sucesso. Faça login para continuar.",
