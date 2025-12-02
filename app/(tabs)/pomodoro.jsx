@@ -1,5 +1,13 @@
 // app/(tabs)/pomodoro.jsx
-import { Coffee, Pause, Play, RotateCcw, Timer } from 'lucide-react-native';
+import { 
+  Coffee, 
+  Pause, 
+  Play, 
+  RotateCcw, 
+  Timer, 
+  Zap, 
+  CheckCircle2 
+} from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -8,24 +16,74 @@ import {
   Text,
   useColorScheme,
   View,
-  ActivityIndicator
+  ActivityIndicator,
+  StatusBar,
+  TouchableOpacity
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Componentes
 import { Botao } from '../../componentes/Botao';
-// ...
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../componentes/Card';
 import { Progress } from '../../componentes/Progress';
 import { Select, SelectItem } from '../../componentes/Select';
+
+// Contextos
 import { useAuth } from '../../contexto/AuthContexto';
 import { useSubjects } from '../../contexto/SubjectContexto';
-// NOVO: Importar useStudyData
 import { useStudyData } from '../../contexto/StudyDataContexto'; 
 import { cores } from '../../tema/cores';
+
+// Header do Mascote (Dinâmico: Foco vs Pausa)
+function MascotHeader({ sessionType, theme }) {
+  const isWork = sessionType === 'TRABALHO';
+  
+  return (
+    <View style={styles.mascotSection}>
+      <View style={styles.mascotContainer}>
+        {/* Placeholder para imagem do Tubarão */}
+        <View style={[styles.mascotPlaceholder, { backgroundColor: theme.primary + '15', borderColor: theme.primary }]}>
+            {isWork ? <Zap size={32} color={theme.primary} /> : <Coffee size={32} color={theme.primary} />}
+            <Text style={{fontSize: 10, color: theme.primary, fontWeight:'bold', marginTop: 4}}>
+                {isWork ? 'FOCADO' : 'RELAX'}
+            </Text>
+        </View>
+      </View>
+
+      <View style={[styles.speechBubble, { backgroundColor: theme.card, shadowColor: theme.primary }]}>
+        <View style={styles.speechArrow} />
+        <Text style={[styles.speechTitle, { color: theme.primary }]}>
+          {isWork ? 'Modo Foco Ativado!' : 'Hora de Relaxar!'}
+        </Text>
+        <Text style={[styles.speechText, { color: theme.mutedForeground }]}>
+          {isWork 
+            ? 'Sem distrações agora, hein? Vamos nadar até a aprovação! 🦈' 
+            : 'Respire fundo e recarregue as energias para o próximo mergulho.'}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// Card de Estatística (Estilo Oceano) - Com ajuste de quebra de linha
+function OceanStatCard({ title, value, icon: Icon, theme }) {
+  return (
+    <View style={[styles.oceanCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <View style={{flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 8}}>
+        <View style={[styles.oceanIconBox, { backgroundColor: theme.primary + '15' }]}>
+            <Icon size={18} color={theme.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+            <Text style={[styles.oceanCardTitle, { color: theme.mutedForeground }]}>{title}</Text>
+        </View>
+      </View>
+      <Text style={[styles.oceanCardValue, { color: theme.foreground }]}>{value}</Text>
+    </View>
+  );
+}
 
 export default function TelaPomodoro() {
   const { user } = useAuth();
   const { subjects: availableSubjects, isLoading: isSubjectsLoading } = useSubjects();
-  // USAR CONTEXTO: Obter sessões e função de adicionar do contexto
   const { sessions, addSession, isLoading: isStudyLoading } = useStudyData(); 
   
   const scheme = useColorScheme();
@@ -34,13 +92,14 @@ export default function TelaPomodoro() {
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
   const [isRunning, setIsRunning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 min
+  
+  const workDuration = 25 * 60;
+  const breakDuration = 5 * 60;
+
+  const [timeLeft, setTimeLeft] = useState(workDuration); 
   const [sessionType, setSessionType] = useState('TRABALHO');
   const [sessionStartTime, setSessionStartTime] = useState(null);
   const intervalRef = useRef(null);
-
-  const workDuration = 25 * 60;
-  const breakDuration = 5 * 60;
   
   const isLoading = isSubjectsLoading || isStudyLoading;
 
@@ -71,9 +130,34 @@ export default function TelaPomodoro() {
     };
   }, [isRunning, sessionType, sessions]);
 
+  const saveSession = async (secondsElapsed) => {
+    if (sessionType === 'TRABALHO' && secondsElapsed >= 60) {
+      try {
+        const durationMinutes = Math.floor(secondsElapsed / 60);
+        
+        const newSession = {
+          duracao: durationMinutes,
+          dataInicio: sessionStartTime ? sessionStartTime.toISOString() : new Date().toISOString(),
+          dataFim: new Date().toISOString(),
+          tipo: 'TRABALHO',
+          usuarioId: user?.id,
+          materiaId: selectedSubject || null,
+        };
+        
+        await addSession(newSession);
+        return true; 
+      } catch (error) {
+        console.error('Erro ao salvar sessão parcial:', error);
+      }
+    }
+    return false;
+  };
+
   const handleStart = () => {
     if (!isRunning) {
-      setSessionStartTime(new Date());
+      if (!sessionStartTime) {
+          setSessionStartTime(new Date());
+      }
     }
     setIsRunning(true);
   };
@@ -82,8 +166,18 @@ export default function TelaPomodoro() {
     setIsRunning(false);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    
+    const currentDuration = sessionType === 'TRABALHO' ? workDuration : breakDuration;
+    const elapsed = currentDuration - timeLeft;
+
+    const saved = await saveSession(elapsed);
+    
+    if (saved) {
+        Alert.alert("Progresso Salvo", "Os minutos que você estudou foram registrados mesmo sem concluir o timer.");
+    }
+
     setIsRunning(false);
     setTimeLeft(sessionType === 'TRABALHO' ? workDuration : breakDuration);
     setSessionStartTime(null);
@@ -93,33 +187,15 @@ export default function TelaPomodoro() {
     setIsRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
 
-    if (sessionStartTime && sessionType === 'TRABALHO') {
-      try {
-        const endTime = new Date();
-        const duration = Math.floor((endTime.getTime() - sessionStartTime.getTime()) / 1000 / 60);
-
-        const newSession = {
-          duracao: duration || 25,
-          dataInicio: sessionStartTime.toISOString(),
-          dataFim: endTime.toISOString(),
-          tipo: sessionType,
-          usuarioId: user?.id,
-          materiaId: selectedSubject || null,
-        };
-        // USAR CONTEXTO: Adiciona a sessão ao contexto
-        addSession(newSession);
-
-      } catch (error) {
-        console.error('[v0] Error saving session:', error);
-        Alert.alert('Erro', 'Não foi possível salvar a sessão.');
-      }
+    if (sessionType === 'TRABALHO') {
+        await saveSession(workDuration);
     }
 
     Alert.alert(
-      'Pomodoro Completo!',
+      'Ciclo Completo!',
       sessionType === 'TRABALHO'
-        ? 'Hora de fazer uma pausa!'
-        : 'Hora de voltar ao trabalho!',
+        ? 'Parabéns! Hora de fazer uma pausa.'
+        : 'Intervalo acabou. Hora de voltar ao trabalho!',
     );
 
     if (sessionType === 'TRABALHO') {
@@ -138,7 +214,6 @@ export default function TelaPomodoro() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Funções que usam o estado 'sessions' do contexto
   const getTodaySessions = () => {
     const today = new Date().toDateString();
     return sessions.filter((s) => new Date(s.dataInicio).toDateString() === today && s.tipo === 'TRABALHO');
@@ -151,10 +226,6 @@ export default function TelaPomodoro() {
   const getAllSessions = () => {
     return sessions.filter(s => s.tipo === 'TRABALHO');
   }
-  
-  const getTotalMinutesOverall = () => {
-      return getAllSessions().reduce((total, s) => total + s.duracao, 0);
-  }
 
   const progress =
     (((sessionType === 'TRABALHO' ? workDuration : breakDuration) - timeLeft) /
@@ -165,108 +236,98 @@ export default function TelaPomodoro() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={{ color: theme.mutedForeground, marginTop: 10 }}>Carregando dados...</Text>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.foreground }]}>Pomodoro Timer</Text>
-          <Text style={[styles.subtitle, { color: theme.mutedForeground }]}>
-            Use a técnica Pomodoro para estudar com foco
-          </Text>
-        </View>
+      <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* 1. MASCOTE (Agora é o topo) */}
+        <MascotHeader sessionType={sessionType} theme={theme} />
 
-        <View style={styles.contentGrid}>
-          <Card style={styles.timerCard}>
-            <CardHeader>
-              <CardTitle style={styles.cardTitle}>
+        {/* 2. CRONÔMETRO */}
+        <View style={[styles.timerCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <View style={[styles.sessionBadge, { backgroundColor: sessionType === 'TRABALHO' ? theme.primary + '20' : theme.muted }]}>
                 {sessionType === 'TRABALHO' ? (
-                  <Timer color={theme.foreground} size={20} />
+                  <Timer size={14} color={theme.primary} style={{ marginRight: 6 }} />
                 ) : (
-                  <Coffee color={theme.foreground} size={20} />
+                  <Coffee size={14} color={theme.mutedForeground} style={{ marginRight: 6 }} />
                 )}
-                <Text style={{ color: theme.foreground, marginLeft: 8 }}>
-                  {sessionType === 'TRABALHO' ? 'Sessão de Estudo' : 'Pausa'}
+                <Text style={{ fontSize: 12, fontWeight: '700', color: sessionType === 'TRABALHO' ? theme.primary : theme.mutedForeground }}>
+                    {sessionType === 'TRABALHO' ? 'SESSÃO DE ESTUDO' : 'HORA DA PAUSA'}
                 </Text>
-              </CardTitle>
-            </CardHeader>
-            <CardContent style={styles.timerContent}>
-              <Text style={[styles.timerText, { color: theme.foreground }]}>
-                {formatTime(timeLeft)}
-              </Text>
-              <Progress value={progress} style={{ width: '100%' }} />
+            </View>
 
-              {sessionType === 'TRABALHO' && (
+            <Text style={[styles.timerText, { color: theme.foreground }]}>
+                {formatTime(timeLeft)}
+            </Text>
+
+            <Progress value={progress} style={{ width: '100%', height: 12, borderRadius: 6, marginBottom: 24 }} />
+
+            {sessionType === 'TRABALHO' && (
                 <View style={styles.pickerContainer}>
-                  <Text style={[styles.label, { color: theme.foreground }]}>Matéria (opcional)</Text>
+                  <Text style={[styles.label, { color: theme.mutedForeground }]}>Matéria do Foco (Opcional)</Text>
                   <Select
                     value={selectedSubject}
                     onValueChange={setSelectedSubject}
                     enabled={!isRunning}
                   >
-                    <SelectItem label="Nenhuma matéria" value="" />
+                    <SelectItem label="Selecionar Matéria..." value="" />
                     {subjects.map((subject) => (
-                      // A chave (key) e o valor (value) usam o ID único da matéria
                       <SelectItem key={subject.id} label={subject.nome} value={subject.id} /> 
                     ))}
                   </Select>
                 </View>
-              )}
+            )}
 
-              <View style={[styles.buttonRow]}> 
+            <View style={styles.controlsRow}>
                 {!isRunning ? (
-                  <Botao onPress={handleStart} style={{ flex: 1 }}>
-                    <Play color={theme.primaryForeground} size={18} style={{ marginRight: 8 }} />
+                  <Botao onPress={handleStart} style={{ flex: 1, borderRadius: 12 }}>
+                    <Play color={theme.primaryForeground} size={20} style={{ marginRight: 8 }} fill={theme.primaryForeground}/>
                     Iniciar
                   </Botao>
                 ) : (
-                  <Botao variant="destructive" onPress={handlePause} style={{ flex: 1 }}>
-                    <Pause color={theme.primaryForeground} size={18} style={{ marginRight: 8 }} />
+                  <Botao variant="destructive" onPress={handlePause} style={{ flex: 1, borderRadius: 12 }}>
+                    <Pause color={theme.primaryForeground} size={20} style={{ marginRight: 8 }} fill={theme.primaryForeground}/>
                     Pausar
                   </Botao>
                 )}
-                <Botao variant="outline" onPress={handleReset} style={{ flex: 1 }}>
-                  <RotateCcw color={theme.foreground} size={18} />
-                </Botao>
-              </View>
-            </CardContent>
-          </Card>
-
-          <View style={styles.statsContainer}>
-            <Card style={{ width: '100%' }}>
-              <CardHeader>
-                <CardTitle style={{ color: theme.foreground }}>Hoje</CardTitle>
-                <CardDescription>Sessões de Trabalho completadas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Text style={[styles.statText, { color: theme.foreground }]}>
-                  {getTodaySessions().length}
-                </Text>
-                <Text style={[styles.statSubText, { color: theme.mutedForeground }]}>
-                  {getTotalMinutesToday()} minutos
-                </Text>
-              </CardContent>
-            </Card>
-            <Card style={{ width: '100%' }}>
-              <CardHeader>
-                <CardTitle style={{ color: theme.foreground }}>Total</CardTitle>
-                <CardDescription>Todas as sessões de Trabalho</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Text style={[styles.statText, { color: theme.foreground }]}>
-                  {getAllSessions().length}
-                </Text>
-                <Text style={[styles.statSubText, { color: theme.mutedForeground }]}>
-                  {getTotalMinutesOverall()} minutos
-                </Text>
-              </CardContent>
-            </Card>
-          </View>
+                
+                <TouchableOpacity 
+                    onPress={handleReset} 
+                    style={[styles.resetButton, { borderColor: theme.border }]}
+                >
+                    <RotateCcw color={theme.mutedForeground} size={20} />
+                </TouchableOpacity>
+            </View>
         </View>
+
+        {/* 3. ESTATÍSTICAS DO DIA */}
+        <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Resumo de Hoje</Text>
+        <View style={styles.statsGrid}>
+            <OceanStatCard 
+                title="Sessões Completas"
+                value={getTodaySessions().length}
+                icon={CheckCircle2}
+                theme={theme}
+            />
+            <OceanStatCard 
+                title="Minutos Realizados" 
+                value={getTotalMinutesToday()}
+                icon={Timer}
+                theme={theme}
+            />
+        </View>
+
+        <View style={{ alignItems: 'center', marginTop: 16 }}>
+            <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
+                Total acumulado: {getAllSessions().length} registros
+            </Text>
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -274,19 +335,124 @@ export default function TelaPomodoro() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 20, gap: 24, paddingBottom: 60 },
-  header: { gap: 4 },
-  title: { fontSize: 28, fontWeight: '700' },
-  subtitle: { fontSize: 16 },
-  contentGrid: { gap: 24 },
-  timerCard: {},
-  cardTitle: { flexDirection: 'row', alignItems: 'center' },
-  timerContent: { alignItems: 'center', gap: 24 },
-  timerText: { fontSize: 60, fontWeight: '700', letterSpacing: 1.5 },
-  pickerContainer: { width: '100%', gap: 8 },
-  label: { fontSize: 14, fontWeight: '500', color: '#262626' },
-  buttonRow: { flexDirection: 'row', gap: 16, paddingBottom: 10, }, 
-  statsContainer: { gap: 16 },
-  statText: { fontSize: 28, fontWeight: '700' },
-  statSubText: { fontSize: 12, marginTop: 2 },
+  scrollContent: { padding: 20, gap: 24, paddingBottom: 100 }, 
+
+  // MASCOTE
+  mascotSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 10, // Margem superior adicionada para compensar a remoção do topo
+  },
+  mascotContainer: {
+    marginRight: 16,
+  },
+  mascotPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speechBubble: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 16,
+    borderBottomLeftRadius: 4,
+    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  speechTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  speechText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  // TIMER CARD
+  timerCard: {
+      borderRadius: 24,
+      borderWidth: 1,
+      padding: 24,
+      alignItems: 'center',
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+  },
+  sessionBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+      marginBottom: 16,
+  },
+  timerText: {
+      fontSize: 64,
+      fontWeight: '700',
+      fontVariant: ['tabular-nums'], 
+      marginBottom: 16,
+      letterSpacing: 2,
+  },
+  pickerContainer: {
+      width: '100%',
+      marginBottom: 24,
+  },
+  label: {
+      fontSize: 12,
+      fontWeight: '600',
+      marginBottom: 8,
+      marginLeft: 4,
+  },
+  controlsRow: {
+      flexDirection: 'row',
+      width: '100%',
+      gap: 12,
+  },
+  resetButton: {
+      width: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderRadius: 12,
+  },
+
+  // STATS
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  oceanCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  oceanIconBox: {
+    padding: 6,
+    borderRadius: 8,
+  },
+  oceanCardTitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    flexWrap: 'wrap',
+  },
+  oceanCardValue: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
 });

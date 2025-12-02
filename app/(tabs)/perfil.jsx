@@ -1,5 +1,5 @@
 // app/(tabs)/perfil.jsx
-import { Plus, Edit, Trash2, Calendar, Clock, ChevronUp, ChevronDown } from 'lucide-react-native'; 
+import { Plus, Edit, Trash2, Calendar, Clock, ChevronUp, ChevronDown, BookOpen } from 'lucide-react-native'; 
 import React, { useState, useCallback } from 'react';
 import {
   ActivityIndicator,
@@ -44,7 +44,6 @@ export default function TelaPlanejadorSemanal() {
   const [isSaving, setIsSaving] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   
-  // Controles de visibilidade dos Pickers (Seletores)
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
 
@@ -55,7 +54,6 @@ export default function TelaPlanejadorSemanal() {
     materia: '',
   });
 
-  // --- Helpers de Conversão ---
   const parseTimeString = (timeStr) => {
     if (!timeStr) return new Date();
     const [h, m] = timeStr.split(':');
@@ -127,15 +125,13 @@ export default function TelaPlanejadorSemanal() {
 
   const filteredRoutine = getFilteredAndSortedRoutine(selectedDay);
 
-  // --- Handlers de Picker ---
-
   const toggleTimePicker = () => {
-    setShowDurationPicker(false); // Fecha o outro se estiver aberto
+    setShowDurationPicker(false);
     setShowTimePicker(prev => !prev);
   };
 
   const toggleDurationPicker = () => {
-    setShowTimePicker(false); // Fecha o outro se estiver aberto
+    setShowTimePicker(false);
     setShowDurationPicker(prev => !prev);
   };
 
@@ -162,8 +158,6 @@ export default function TelaPlanejadorSemanal() {
         setFormData({ ...formData, duracao: `${h}h ${m}min` });
     }
   };
-
-  // --- Salvar e Deletar ---
 
   const handleSave = async () => {
     const [horaStr, minStr] = formData.horario.split(':');
@@ -312,26 +306,35 @@ export default function TelaPlanejadorSemanal() {
 
                 return (
                     <Card key={item.id} style={styles.routineCard}>
-                        <View style={styles.cardHeaderTime}>
-                            <Text style={[styles.cardTime, { color: theme.primary }]}>
-                                {item.horarioDisplay} - {endHour.toString().padStart(2, '0')}:{endMin.toString().padStart(2, '0')}
-                            </Text>
-                            <Text style={[styles.cardDuration, { color: theme.mutedForeground }]}>
-                                {item.duracaoDisplay}
-                            </Text>
-                        </View>
-                        <View style={styles.cardContentSubject}>
-                            <Text style={[styles.cardSubject, { color: theme.foreground }]} numberOfLines={2}>
-                                {item.materia}
-                            </Text>
+                        {/* Linha Principal: Matéria e Ações */}
+                        <View style={styles.cardHeaderRow}>
+                            <View style={styles.subjectContainer}>
+                                <BookOpen size={18} color={theme.primary} style={{ marginRight: 8 }} />
+                                <Text style={[styles.cardSubject, { color: theme.foreground }]} numberOfLines={1}>
+                                    {item.materia}
+                                </Text>
+                            </View>
                             <View style={styles.routineActions}>
-                                <TouchableOpacity onPress={() => handleOpenDialog(item)} style={{padding: 4}}>
+                                <TouchableOpacity onPress={() => handleOpenDialog(item)} style={styles.actionButton}>
                                     <Edit color={theme.mutedForeground} size={18} />
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => handleDelete(item.id)} style={{padding: 4}}>
+                                <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.actionButton}>
                                     <Trash2 color={theme.destructive} size={18} />
                                 </TouchableOpacity>
                             </View>
+                        </View>
+
+                        {/* Linha Secundária: Horário e Duração (mais sutil) */}
+                        <View style={styles.cardFooterRow}>
+                            <View style={styles.timeInfo}>
+                                <Clock size={14} color={theme.mutedForeground} style={{ marginRight: 6 }} />
+                                <Text style={[styles.cardTime, { color: theme.mutedForeground }]}>
+                                    {item.horarioDisplay} - {endHour.toString().padStart(2, '0')}:{endMin.toString().padStart(2, '0')}
+                                </Text>
+                            </View>
+                            <Text style={[styles.cardDuration, { color: theme.mutedForeground }]}>
+                                {item.duracaoDisplay}
+                            </Text>
                         </View>
                     </Card>
                 );
@@ -377,7 +380,6 @@ export default function TelaPlanejadorSemanal() {
                         {formData.horario}
                     </Text>
                 </View>
-                {/* Ícone seta para indicar se está aberto */}
                 {Platform.OS === 'ios' && (
                     showTimePicker 
                         ? <ChevronUp size={20} color={theme.mutedForeground} /> 
@@ -385,7 +387,6 @@ export default function TelaPlanejadorSemanal() {
                 )}
             </TouchableOpacity>
             
-            {/* O picker aparece AQUI DENTRO (Inline) no iOS */}
             {showTimePicker && (
                 <View style={styles.inlinePickerContainer}>
                     <DateTimePicker
@@ -425,7 +426,6 @@ export default function TelaPlanejadorSemanal() {
                 )}
             </TouchableOpacity>
 
-            {/* O picker aparece AQUI DENTRO (Inline) no iOS */}
             {showDurationPicker && (
                 <View style={styles.inlinePickerContainer}>
                     <DateTimePicker
@@ -488,32 +488,53 @@ const styles = StyleSheet.create({
   segmentedControl: { height: 38 },
   listSubtitle: { fontSize: 14, marginBottom: 16 },
   routineList: { marginTop: 16, gap: 12 },
+  
+  // -- Estilo do Cartão Atualizado --
   routineCard: {
       width: '100%',
       padding: 16,
-      borderLeftWidth: 4, 
-      borderLeftColor: cores.light.primary,
+      // Removida a barra lateral azul (borderLeftWidth e borderLeftColor)
   },
-  cardHeaderTime: {
+  cardHeaderRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 8,
+      marginBottom: 12,
   },
-  cardTime: { fontSize: 16, fontWeight: '700' },
-  cardDuration: { fontSize: 12, fontWeight: '600' },
-  cardContentSubject: {
+  subjectContainer: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
+      flex: 1,
   },
   cardSubject: {
-      fontSize: 16,
-      fontWeight: '500',
+      fontSize: 18,
+      fontWeight: '600',
       flexShrink: 1,
-      marginRight: 10,
   },
-  routineActions: { flexDirection: 'row', gap: 4, marginLeft: 'auto' },
+  routineActions: { 
+      flexDirection: 'row', 
+      gap: 12, 
+      marginLeft: 8 
+  },
+  actionButton: {
+      padding: 4,
+  },
+  cardFooterRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(0,0,0,0.05)', // Separador sutil
+  },
+  timeInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+  },
+  cardTime: { fontSize: 14, fontWeight: '500' },
+  cardDuration: { fontSize: 13, fontWeight: '400' },
+  // ---------------------------------
+
   dialogTitle: { fontSize: 18, fontWeight: '600', marginBottom: 16 },
   form: { gap: 12 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
@@ -521,14 +542,14 @@ const styles = StyleSheet.create({
   pickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Espalha texto e ícone
+    justifyContent: 'space-between',
     height: 44,
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 12,
   },
   inlinePickerContainer: {
-    overflow: 'hidden', // Ajuda a conter o picker
+    overflow: 'hidden',
     alignItems: 'center',
     marginBottom: 12,
   },

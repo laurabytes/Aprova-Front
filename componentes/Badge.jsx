@@ -1,6 +1,6 @@
 // componentes/Badge.jsx
-import { StyleSheet, Text, useColorScheme, View } from 'react-native';
-import { cores } from '../tema/cores'; // Caminho para a pasta 'tema'
+import { StyleSheet, Text, useColorScheme, View, Platform } from 'react-native';
+import { cores } from '../tema/cores';
 
 export function Badge({ children, variant = 'default', style }) {
   const scheme = useColorScheme();
@@ -31,17 +31,32 @@ export function Badge({ children, variant = 'default', style }) {
 
   const styles = StyleSheet.create({
     badge: {
-      paddingHorizontal: 10,
-      paddingVertical: 2,
+      paddingHorizontal: 12,
+      paddingVertical: 4, // Padding vertical equilibrado
       borderRadius: 12,
       borderWidth: 1,
       alignSelf: 'flex-start',
+      
+      // Garante que o container se comporte como uma caixa flexível centralizada
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      
       ...variantStyles[variant],
     },
     text: {
       fontSize: 12,
-      fontWeight: '500',
+      fontWeight: '600',
       color: variantStyles[variant].color,
+      textAlign: 'center',
+      
+      // CORREÇÃO CRÍTICA PARA ANDROID
+      ...Platform.select({
+        android: {
+          includeFontPadding: false, // Remove o espaço extra nativo da fonte
+          textAlignVertical: 'center', // Força o centro vertical
+        },
+      }),
     },
   });
 
