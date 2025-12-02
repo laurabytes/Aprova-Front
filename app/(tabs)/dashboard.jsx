@@ -1,36 +1,39 @@
 // app/(tabs)/dashboard.jsx
 import { useRouter } from 'expo-router';
 import {
+  Award,
   BookOpen,
+  PenLine,
+  Play,
   Target,
   Timer,
   TrendingUp,
-  Play,
-  Award,
-  Zap,
-  PenLine,
   UserCircle // Importado de volta
 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
+  Image // Importante para colocar o mascote depois
+  ,
+
+
+
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   useColorScheme,
-  View,
-  StatusBar,
-  Image // Importante para colocar o mascote depois
+  View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../contexto/AuthContexto';
-import { useSubjects } from '../../contexto/SubjectContexto';
 import { useStudyData } from '../../contexto/StudyDataContexto';
+import { useSubjects } from '../../contexto/SubjectContexto';
 import { cores } from '../../tema/cores';
 
 // Componente: Header do Mascote
@@ -39,14 +42,12 @@ function MascotHeader({ user, theme }) {
     <View style={styles.mascotSection}>
       {/* Lado do Mascote */}
       <View style={styles.mascotContainer}>
-        {/* AQUI É ONDE VOCÊ VAI COLOCAR A IMAGEM DO TUBARÃO 
-           Substitua o <View> abaixo por:
-           <Image source={require('../../assets/images/seu-tubarao.png')} style={styles.mascotImage} />
-        */}
-        <View style={[styles.mascotPlaceholder, { backgroundColor: theme.primary + '15', borderColor: theme.primary }]}>
-            <Zap size={32} color={theme.primary} />
-            <Text style={{fontSize: 10, color: theme.primary, fontWeight:'bold', marginTop: 4}}>MASCOTE</Text>
-        </View>
+        {/* SUBSTITUÍDO: PLACEHOLDER PELA IMAGEM REAL DO MASCOTE */}
+        <Image 
+          source={require('../../assets/images/mascote.png')} 
+          style={styles.mascotImage} 
+          resizeMode="contain"
+        />
       </View>
 
       {/* Lado do Balão de Fala */}
@@ -292,19 +293,13 @@ const styles = StyleSheet.create({
   },
   // Use esse estilo quando colocar a <Image>
   mascotImage: {
-    width: 80,
-    height: 80,
-    resizeMode: 'contain',
-  },
-  // Placeholder temporário
-  mascotPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    // ALTERADO: Aumentando o tamanho para 100x100
+    width: 115, 
+    height: 115, 
+    borderRadius: 50, // Metade do tamanho para ser um círculo perfeito
     borderWidth: 2,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: 'transparent', 
+    resizeMode: 'contain',
   },
   
   // BALÃO DE FALA

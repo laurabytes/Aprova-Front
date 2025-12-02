@@ -1,27 +1,28 @@
 // app/(tabs)/materias/index.jsx
 import { Link, useRouter } from 'expo-router';
-import { 
-  Edit, 
-  Plus, 
-  Trash2, 
+import {
   BookOpen,
-  Shuffle, // Ícone para a revisão mista
-  Layers   // Ícone alternativo
+  Edit, // Ícone para a revisão mista
+  Layers // Ícone alternativo
+  ,
+  Plus,
+  Shuffle,
+  Trash2
 } from 'lucide-react-native';
-import { useState } from 'react'; 
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   useColorScheme,
-  View,
-  Pressable,
-  StatusBar
+  View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import ColorPicker from 'react-native-wheel-color-picker';
 
 // Componentes
@@ -32,7 +33,7 @@ import { Textarea } from '../../../componentes/Textarea';
 
 // Contextos e Serviços
 import { useAuth } from '../../../contexto/AuthContexto';
-import { useSubjects } from '../../../contexto/SubjectContexto'; 
+import { useSubjects } from '../../../contexto/SubjectContexto';
 import { cores } from '../../../tema/cores';
 
 // Header do Mascote
