@@ -1,3 +1,4 @@
+// contexto/StudyDataContexto.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContexto'; 
@@ -36,7 +37,6 @@ export function StudyDataProvider({ children }) {
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. CARREGAMENTO
   useEffect(() => {
     if (!user || isAuthLoading) { 
         setFoco('');
@@ -50,26 +50,24 @@ export function StudyDataProvider({ children }) {
         try {
             setIsLoading(true);
             
-            // Foco (Local) 
             const storedFocus = await AsyncStorage.getItem(FOCUS_KEY);
             if (storedFocus) setFoco(storedFocus);
 
-            // Metas (API)
-            const metas = await MetasService.listar();
+            // CORREÇÃO CRÍTICA: Passando user.id
+            const metas = await MetasService.listar(user.id);
             
-            // CORREÇÃO CRÍTICA: Mapeia metasId para id se necessário para o frontend não quebrar
             const metasFormatadas = metas.map(m => ({
                 ...m,
-                id: m.id || m.metasId // Garante que 'id' exista
+                id: m.id || m.metasId 
             }));
             setGoals(metasFormatadas);
 
-            // Sessões Pomodoro (API)
-            const sessoes = await SessaoEstudoService.listar();
-            setSessions(sessoes);
+            // CORREÇÃO CRÍTICA: Passando user.id
+            const sessoes = await SessaoEstudoService.listar(user.id);
+            setSessions(sessoes || []);
 
         } catch (e) { 
-            console.error('Falha ao carregar dados', e); 
+            console.error('Falha ao carregar dados de estudo', e); 
         } finally { 
             setIsLoading(false); 
         }
@@ -77,30 +75,23 @@ export function StudyDataProvider({ children }) {
     loadData();
   }, [user, isAuthLoading]);
 
-  // Salvar Foco (Local)
   useEffect(() => {
     if (user && !isLoading) AsyncStorage.setItem(FOCUS_KEY, foco).catch(console.error);
   }, [foco, isLoading, user]);
 
-  // --- AÇÕES DE FOCO (Local) ---
   const updateFoco = (newFoco) => setFoco(newFoco);
 
-  // --- AÇÕES DE METAS (API) ---
   const addGoal = async (newGoal) => {
     try {
-        // CORREÇÃO: Payload ajustado para o Backend Java
-        // Backend espera: nome, data, status (int), usuarioId
         const payload = {
-            nome: newGoal.nome || newGoal.titulo, // Garante que envia 'nome'
+            nome: newGoal.nome || newGoal.titulo, 
             data: newGoal.data, 
-            usuarioId: newGoal.usuarioId,
-            status: 0, // CORREÇÃO: Envia Integer 0 (Em andamento)
-            // progresso: backend ignora no create, mas o front usa localmente
+            usuarioId: user.id, // Garante envio do ID
+            status: 0, 
         };
         
         const saved = await MetasService.criar(payload);
 
-        // Ao salvar no estado local, garantimos que o ID está correto
         const savedGoalWithId = {
             ...saved,
             id: saved.id || saved.metasId,
@@ -108,21 +99,16 @@ export function StudyDataProvider({ children }) {
         };
 
         setGoals(prev => [...prev, savedGoalWithId]);
-        
     } catch (e) { console.error("Erro ao criar meta", e); }
   };
   
   const updateGoal = async (updatedGoal) => {
     try {
-        // Passa o objeto direto, assumindo que já vem com status inteiro do front
-        const payload = { ...updatedGoal };
-        
-        // Garante que usamos o ID correto para a URL
+        const payload = { ...updatedGoal, usuarioId: user.id };
         const idParaAtualizar = updatedGoal.id || updatedGoal.metasId;
 
         const saved = await MetasService.atualizar(idParaAtualizar, payload);
         
-        // Atualiza a lista local
         setGoals(prev => prev.map(g => {
             const currentId = g.id || g.metasId;
             return currentId === idParaAtualizar ? { ...saved, id: currentId } : g;
@@ -133,34 +119,29 @@ export function StudyDataProvider({ children }) {
   const deleteGoal = async (id) => {
       try {
           await MetasService.apagar(id);
-          // Remove filtrando tanto por id quanto por metasId para garantir
           setGoals(prev => prev.filter(g => (g.id !== id && g.metasId !== id)));
       } catch (e) { console.error("Erro ao apagar meta", e); }
   };
   
   const toggleGoalStatus = async (goal) => {
     try {
-        // CORREÇÃO: Lógica de status com Inteiro (0 ou 1)
-        // 1 = Concluído, 0 = Em andamento
         const currentStatus = (goal.status === 1 || goal.status === 'CONCLUIDO') ? 1 : 0;
         const newStatus = currentStatus === 1 ? 0 : 1;
         const newProgress = newStatus === 1 ? 100 : 0;
 
         const idParaAtualizar = goal.id || goal.metasId;
 
-        // Monta payload compatível com DTORequest
         const payload = { 
             ...goal, 
             status: newStatus, 
-            data: goal.data || goal.dataInicio, // Garante envio da data
-            nome: goal.nome || goal.titulo,     // Garante envio do nome
-            progresso: newProgress 
+            data: goal.data || goal.dataInicio, 
+            nome: goal.nome || goal.titulo,
+            progresso: newProgress,
+            usuarioId: user.id
         };
         
-        // Atualiza no backend
         const saved = await MetasService.atualizar(idParaAtualizar, payload);
         
-        // Atualiza no frontend
         setGoals(prev => prev.map(g => {
              const gId = g.id || g.metasId;
              return gId === idParaAtualizar ? { ...saved, id: gId, status: newStatus, progresso: newProgress } : g;
@@ -169,13 +150,13 @@ export function StudyDataProvider({ children }) {
     } catch(e) { console.error("Erro toggle status meta", e); }
   }
 
-  // --- AÇÕES DE POMODORO (API) ---
   const addSession = async (newSession) => {
     try {
         const payload = {
             dataInicio: newSession.dataInicio, 
             duracao: newSession.duracao,
             tipo: newSession.tipo, 
+            usuarioId: user.id // Adicionar se o backend precisar no futuro
         };
         
         const saved = await SessaoEstudoService.criar(payload);

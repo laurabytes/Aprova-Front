@@ -67,9 +67,13 @@ export default function TelaMaterias() {
 
   // --- FUNÇÃO PARA CARREGAR MATÉRIAS DA API ---
   const loadMaterias = async () => {
+    // 💡 CORREÇÃO 1: Evita chamada com ID undefined
+    if (!user || !user.id) return;
+
     try {
       setIsPageLoading(true);
-      const data = await MateriaService.listar();
+      // 💡 CORREÇÃO 2: Passa o ID do usuário para o serviço
+      const data = await MateriaService.listar(user.id);
       setSubjects(data || []);
     } catch (error) {
       console.error("Erro ao listar matérias:", error);
@@ -80,9 +84,10 @@ export default function TelaMaterias() {
   };
 
   useFocusEffect(
+    // 💡 CORREÇÃO 3: Adiciona 'user' como dependência para recarregar ao logar
     useCallback(() => {
       loadMaterias();
-    }, [])
+    }, [user])
   );
 
   const handleCloseDialog = () => {
@@ -96,6 +101,11 @@ export default function TelaMaterias() {
   const handleSubmit = async () => {
     if (formData.nome.trim() === '') {
       Alert.alert('Campo Obrigatório', 'Por favor, preencha o nome da matéria.');
+      return;
+    }
+
+    if (!user || !user.id) {
+      Alert.alert('Erro', 'Usuário não identificado.');
       return;
     }
 
@@ -189,6 +199,7 @@ export default function TelaMaterias() {
       return;
     }
 
+    // Embaralhar
     for (let i = allFlashcards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [allFlashcards[i], allFlashcards[j]] = [allFlashcards[j], allFlashcards[i]];
@@ -352,14 +363,12 @@ export default function TelaMaterias() {
                const textColor = getTextColorForBackground(cardColor === theme.card ? '#FFFFFF' : cardColor);
                
                return (
-                // AQUI ESTÁ A CORREÇÃO PRINCIPAL: Passando parâmetros (cor, nome, descricao)
                 <Link 
                   key={subject.id} 
                   href={{
                     pathname: "/(tabs)/materias/[id]",
                     params: { 
                       id: subject.id,
-                      // Removemos o '#' porque a URL pode não codificar corretamente se não usarmos o objeto params
                       cor: cardColor.replace('#', ''), 
                       nome: subject.nome,
                       descricao: subject.descricao || ''

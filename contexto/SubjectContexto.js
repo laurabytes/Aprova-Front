@@ -1,4 +1,4 @@
-// laurabytes/aprova-front/Aprova-Front-a2673b7d96b43f3032686fb9ef44966c6caebbb4/contexto/SubjectContexto.js
+// contexto/SubjectContexto.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContexto'; 
@@ -21,9 +21,7 @@ export function SubjectProvider({ children }) {
   const [flashcardsData, setFlashcardsData] = useState({}); 
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Carregar Dados da API
   useEffect(() => {
-    // CORRIGIDO: Só carrega se user existir e autenticação não estiver em loading
     if (!user || isAuthLoading) { 
         setSubjects([]);
         setFlashcardsData({});
@@ -33,17 +31,15 @@ export function SubjectProvider({ children }) {
     
     const loadData = async () => {
       try {
-        setIsLoading(true); // Reinicia o loading quando o user muda para autenticado
+        setIsLoading(true);
         
-        // A. Busca as Matérias
-        const materias = await MateriaService.listar();
+        // CORREÇÃO CRÍTICA: Passando user.id
+        const materias = await MateriaService.listar(user.id);
         
         if (Array.isArray(materias)) {
              setSubjects(materias);
              
-             // B. Busca Flashcards para cada matéria
              const flashcardsMap = {};
-             
              await Promise.all(materias.map(async (materia) => {
                  try {
                      const cards = await FlashcardService.listarPorMateria(materia.id);
@@ -53,27 +49,24 @@ export function SubjectProvider({ children }) {
                      flashcardsMap[materia.id] = [];
                  }
              }));
-             
              setFlashcardsData(flashcardsMap);
         }
 
       } catch (e) {
-        console.error('Falha ao carregar dados de estudo da API [AxiosError: Request failed with status code 403]', e); 
+        console.error('Falha ao carregar dados de estudo:', e); 
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
-  }, [user, isAuthLoading]); // DEPENDÊNCIAS CORRIGIDAS
-
-  // --- MATÉRIAS (CRUD) ---
+  }, [user, isAuthLoading]);
 
   const addSubject = async (newSubject) => {
     try {
-        // 🚀 CORREÇÃO: Passa o objeto completo para o service
-        const savedSubjectPartial = await MateriaService.criar(newSubject);
+        // Garante que o ID do usuário vá no payload
+        const payload = { ...newSubject, usuarioId: user.id };
+        const savedSubjectPartial = await MateriaService.criar(payload);
         
-        // Combina o objeto retornado (id, nome) com os dados locais (descricao, cor) antes de salvar no estado
         const savedSubjectFull = { 
             ...newSubject, 
             ...savedSubjectPartial, 
@@ -89,10 +82,9 @@ export function SubjectProvider({ children }) {
 
   const updateSubject = async (updatedSubject) => {
     try {
-        // 🚀 CORREÇÃO: Passa o objeto completo para o service
-        const savedPartial = await MateriaService.atualizar(updatedSubject.id, updatedSubject);
+        const payload = { ...updatedSubject, usuarioId: user.id };
+        const savedPartial = await MateriaService.atualizar(updatedSubject.id, payload);
         
-        // Combina o objeto retornado com os dados locais antes de salvar no estado
         const savedFull = {
             ...updatedSubject, 
             ...savedPartial, 
@@ -108,9 +100,7 @@ export function SubjectProvider({ children }) {
 
   const deleteSubject = async (id) => {
     try {
-        // 🚀 Chamada simplificada ao Service
         await MateriaService.apagar(id);
-        
         setSubjects(prev => prev.filter(s => s.id !== id));
         setFlashcardsData(prev => {
             const newFlashcards = { ...prev };
@@ -119,8 +109,6 @@ export function SubjectProvider({ children }) {
         });
     } catch (e) { console.error("Erro ao apagar matéria", e); }
   };
-
-  // --- FLASHCARDS (CRUD) ---
 
   const getFlashcardsBySubject = (subjectId) => {
     return flashcardsData[subjectId] || [];
@@ -140,7 +128,7 @@ export function SubjectProvider({ children }) {
         }));
     } catch (e) { 
         console.error("Erro ao criar flashcard", e); 
-        throw e; // <--- ADICIONE ISSO (Relança o erro para a tela tratar)
+        throw e; 
     }
   };
 
@@ -159,21 +147,19 @@ export function SubjectProvider({ children }) {
           }));
       } catch(e) { 
           console.error("Erro update flashcard", e);
-          throw e; // <--- ADICIONE ISSO
+          throw e; 
       }
   };
 
   const deleteFlashcard = async (subjectId, flashcardId) => {
      try {
          await FlashcardService.apagar(flashcardId);
-         
          setFlashcardsData(prev => ({
             ...prev,
             [subjectId]: (prev[subjectId] || []).filter(f => f.id !== flashcardId),
          }));
      } catch (e) { 
          console.error("Erro delete flashcard", e);
-         // throw e; // (Opcional no delete, mas recomendado se quiser avisar o usuário)
      }
   };
   

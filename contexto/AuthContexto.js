@@ -37,13 +37,9 @@ export function AuthProvider({ children }) {
     try {
       const data = await UsuarioService.login(email, password);
       
-      // --- DEBUG: Verifique o que a API retorna no console ---
       console.log("--- RESPOSTA DO LOGIN ---");
       console.log(JSON.stringify(data, null, 2));
-      // -------------------------------------------------------
 
-      // Tenta extrair o token de diferentes formatos comuns
-      // Se 'data' for uma string direta, usa ela como token
       let token = null;
       if (typeof data === 'string') {
           token = data;
@@ -75,9 +71,11 @@ export function AuthProvider({ children }) {
 
   const register = async (nome, email, password) => { 
     try {
+      // Apenas registra o usuário, NÃO faz login automático
       await UsuarioService.register(nome, email, password);
-      // Se deu certo, faz o login automático
-      await login(email, password);
+      
+      // REMOVIDO: await login(email, password); 
+      
     } catch (error) {
       const message = error.response?.data?.message || 'Não foi possível cadastrar. Verifique os dados.';
       console.error('Erro ao cadastrar:', error);

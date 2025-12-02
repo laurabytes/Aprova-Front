@@ -1,27 +1,22 @@
 import api from './api'; 
 
 const MetasService = {
-    // GET /metas/listar
-    listar: async () => {
-        const response = await api.get('/metas/listar');
-        return response.data; // Retorna List<MetasDTOResponse>
+    // Agora recebe o usuarioId
+    listar: async (usuarioId) => {
+        const response = await api.get(`/metas/listar?usuarioId=${usuarioId}`);
+        return response.data;
     },
 
-    // POST /api/metas/criar
     criar: async (metasDTORequest) => {
-        // Envia o DTO MetasDTORequest (Ex: {descricao, status, progresso})
         const response = await api.post('/metas/criar', metasDTORequest);
-        return response.data; // Retorna MetasDTOResponse
+        return response.data;
     },
 
-    // PUT /api/metas/atualizar/{id}
     atualizar: async (id, metasDTORequest) => {
-        // Envia o DTO MetasDTORequest (Ex: objeto completo da meta atualizada)
         const response = await api.put(`/metas/atualizar/${id}`, metasDTORequest);
-        return response.data; // Retorna MetasDTOResponse
+        return response.data;
     },
 
-    // DELETE /api/metas/apagar/{id}
     apagar: async (id) => {
         await api.delete(`/metas/apagar/${id}`);
     }

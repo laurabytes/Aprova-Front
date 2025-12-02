@@ -10,7 +10,7 @@ import {
     useColorScheme,
     View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // CORRIGIDO
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Botao } from '../../componentes/Botao';
 import { CampoDeTexto } from '../../componentes/CampoDeTexto';
 import {
@@ -53,7 +53,19 @@ export default function Cadastro() {
     setIsLoading(true);
     try {
       await register(nome, email, senha);
-      router.replace('/(auth)/login');
+      
+      // CORREÇÃO: Mostra mensagem de sucesso e redireciona ao clicar em OK
+      Alert.alert(
+        "Conta criada!",
+        "Seu cadastro foi realizado com sucesso. Faça login para continuar.",
+        [
+            { 
+                text: "Ir para Login", 
+                onPress: () => router.replace('/(auth)/login') 
+            }
+        ]
+      );
+
     } catch (err) {
       Alert.alert('Erro', err.message || 'Erro ao criar conta. Tente novamente.');
     } finally {

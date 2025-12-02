@@ -3,8 +3,10 @@ import api from './api';
 
 class SessaoEstudoService {
 
-  async listar() {
-    return (await api.get('/sessoes-estudo/listar')).data;
+  // CORREÇÃO: Aceita usuarioId
+  async listar(usuarioId) {
+    const response = await api.get(`/sessoes-estudo/listar?usuarioId=${usuarioId}`);
+    return response.data;
   }
 
   async buscarPorId(id) {

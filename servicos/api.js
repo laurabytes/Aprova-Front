@@ -1,9 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-// ⚠️ ATENÇÃO: Seus logs mostram que o Tomcat iniciou na porta 8160.
-// Confirme seu IP no terminal (ipconfig/ifconfig).
-const BASE_URL = 'http://172.20.3.151:8166/api'; 
+// CORREÇÃO: IP da sua máquina (Ethernet) e Porta do Spring (8160)
+const BASE_URL = 'http://10.136.36.252:8166/api'; 
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -12,33 +11,23 @@ const api = axios.create({
   },
 });
 
-// INTERCEPTOR: Adiciona o Token automaticamente, mas com segurança
 api.interceptors.request.use(
   async (config) => {
     try {
       const userJson = await AsyncStorage.getItem('user');
-      
       if (userJson) {
         const user = JSON.parse(userJson);
-        
-        // CORREÇÃO CRÍTICA:
-        // Verifica se o token existe E se não é a string literal "undefined"
+        // Evita enviar token "undefined" que causa erro 403
         if (user && user.token && user.token !== 'undefined') {
           config.headers.Authorization = `Bearer ${user.token}`;
-        } else {
-          // Se o token for "undefined" ou ruim, não enviamos o cabeçalho Authorization.
-          // Isso evita que o backend tente ler um token quebrado.
-          // console.warn(`[API] Token inválido ou ausente. Enviando sem auth.`);
         }
       }
     } catch (error) {
-      console.error('Erro ao buscar token no storage', error);
+      console.error('Erro ao buscar token', error);
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export default api;
