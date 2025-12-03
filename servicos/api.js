@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 // CORREÇÃO: IP da sua máquina (Ethernet) e Porta do Spring (8160)
-const BASE_URL = 'http://academico3.rj.senac.br/aprova:8409/api'; 
+const BASE_URL = 'http://academico3.rj.senac.br/aprova/api'; 
 
 const api = axios.create({
   baseURL: BASE_URL,
