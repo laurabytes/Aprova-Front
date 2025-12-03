@@ -4,7 +4,7 @@
     "slug": "aprova-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/mascote.png", // ALTERADO: Usa o Mascote como ícone principal (se você renomeá-lo para icon.png, não precisa mudar o caminho)
     "scheme": "aprovaapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,7 +14,9 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        // MANTIDO: Estas referências são para ícones adaptativos do Android e não são logos do Expo. 
+        // Se desejar usá-las, você precisará gerar versões com o mascote. Por enquanto, mantemos as originais.
+        "foregroundImage": "./assets/images/android-icon-foreground.png", 
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
@@ -30,7 +32,8 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          // ALTERADO: Substitui a imagem splash do Expo pela imagem mascote
+          "image": "./assets/images/mascote.png", 
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",

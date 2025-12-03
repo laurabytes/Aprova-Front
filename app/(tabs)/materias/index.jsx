@@ -5,6 +5,7 @@ import {
   Edit, // Ícone para a revisão mista
   Layers // Ícone alternativo
   ,
+
   Plus,
   Shuffle,
   Trash2
@@ -13,6 +14,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StatusBar,
@@ -41,10 +43,12 @@ function MascotHeader({ user, theme }) {
   return (
     <View style={styles.mascotSection}>
       <View style={styles.mascotContainer}>
-        <View style={[styles.mascotPlaceholder, { backgroundColor: theme.primary + '15', borderColor: theme.primary }]}>
-            <BookOpen size={32} color={theme.primary} />
-            <Text style={{fontSize: 10, color: theme.primary, fontWeight:'bold', marginTop: 4}}>PROF. TUBARÃO</Text>
-        </View>
+        {/* SUBSTITUÍDO: Placeholder pelo mascote de verdade */}
+        <Image 
+            source={require('../../../assets/images/mascote.png')} 
+            style={styles.mascotImage} 
+            resizeMode="contain"
+        />
       </View>
 
       <View style={[styles.speechBubble, { backgroundColor: theme.card, shadowColor: theme.primary }]}>
@@ -385,18 +389,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 10,
   },
-  mascotContainer: {
+  mascotContainer: { 
     marginRight: 16,
-  },
-  mascotPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 2,
-    borderStyle: 'dashed',
+    // INÍCIO DA ALTERAÇÃO DE TAMANHO
+    width: 115, // Aumentado de 80 para 115 (tamanho do dashboard)
+    height: 115, // Aumentado de 80 para 115
+    borderRadius: 57.5, // 115 / 2
+    // FIM DA ALTERAÇÃO DE TAMANHO
+    overflow: 'hidden', 
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  mascotImage: { 
+    width: '100%', 
+    height: '100%',
+    resizeMode: 'contain',
+  },
+  
   speechBubble: {
     flex: 1,
     padding: 16,
@@ -430,7 +440,7 @@ const styles = StyleSheet.create({
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.05,
-      shadowRadius: 4,
+      shadowRadius: 3,
   },
   mixedIconBox: {
       width: 48,

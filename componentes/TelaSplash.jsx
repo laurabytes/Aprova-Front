@@ -1,8 +1,9 @@
-// componentes/TelaSplash.jsx
+// laurabytes/aprova-front/Aprova-Front-b241cf63137e553c3d5e7e3bcbdf8c6ea8598440/componentes/TelaSplash.jsx
+
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Dimensions, Image, StyleSheet, View } from 'react-native';
-import { cores } from '../tema/cores'; // Opcional, para usar suas cores
+import { cores } from '../tema/cores'; // Importa as cores do seu tema
 
 const { width } = Dimensions.get('window');
 
@@ -20,17 +21,17 @@ export function TelaSplash() {
 
   return (
     <View style={styles.container}>
-      {/* Degradê: Começa Branco (#FFFFFF) e vai para um Azul (#0066FF ou a cor primária do seu tema) */}
+      {/* Degradê: Começa Branco (#FFFFFF) e vai para a cor primária do seu tema */}
       <LinearGradient
-        colors={['#FFFFFF', '#FFFFFF', '#4da6ff']} // Branco em cima, azulando em baixo
+        colors={['#FFFFFF', '#FFFFFF', cores.primaria]} // Usando a cor primária do seu tema (se definido)
         locations={[0, 0.4, 1]} // Controla onde a cor muda
         style={styles.background}
       />
 
       <Animated.View style={{ opacity: fadeAnim }}>
-        {/* Substitua pelo caminho da sua logo real se for diferente */}
+        {/* ALTERADO: Agora aponta para o mascote.png */}
         <Image
-          source={require('../assets/images/icon.png')} 
+          source={require('../assets/images/mascote.png')} 
           style={styles.logo}
           resizeMode="contain"
         />
@@ -42,18 +43,22 @@ export function TelaSplash() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   background: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
-    bottom: 0,
+    height: '100%',
   },
   logo: {
     width: width * 0.5, // 50% da largura da tela
-    height: width * 0.5,
+    height: width * 0.5, // Mantém proporção quadrada (ou ajuste conforme necessário)
+    maxHeight: 200, // Limite de altura para telas maiores
+    maxWidth: 200, // Limite de largura para telas maiores
+    // A propriedade tintColor foi removida, pois seu mascote já deve ser colorido.
   },
 });

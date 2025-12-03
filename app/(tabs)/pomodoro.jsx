@@ -1,24 +1,25 @@
 // app/(tabs)/pomodoro.jsx
-import { 
-  Coffee, 
-  Pause, 
-  Play, 
-  RotateCcw, 
-  Timer, 
-  Zap, 
-  CheckCircle2 
+import {
+  CheckCircle2,
+  Coffee,
+  Pause,
+  Play,
+  RotateCcw,
+  Timer
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
+  Image // Import Image
+  ,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   useColorScheme,
-  View,
-  ActivityIndicator,
-  StatusBar,
-  TouchableOpacity
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -29,8 +30,8 @@ import { Select, SelectItem } from '../../componentes/Select';
 
 // Contextos
 import { useAuth } from '../../contexto/AuthContexto';
+import { useStudyData } from '../../contexto/StudyDataContexto';
 import { useSubjects } from '../../contexto/SubjectContexto';
-import { useStudyData } from '../../contexto/StudyDataContexto'; 
 import { cores } from '../../tema/cores';
 
 // Header do Mascote (Dinâmico: Foco vs Pausa)
@@ -40,13 +41,12 @@ function MascotHeader({ sessionType, theme }) {
   return (
     <View style={styles.mascotSection}>
       <View style={styles.mascotContainer}>
-        {/* Placeholder para imagem do Tubarão */}
-        <View style={[styles.mascotPlaceholder, { backgroundColor: theme.primary + '15', borderColor: theme.primary }]}>
-            {isWork ? <Zap size={32} color={theme.primary} /> : <Coffee size={32} color={theme.primary} />}
-            <Text style={{fontSize: 10, color: theme.primary, fontWeight:'bold', marginTop: 4}}>
-                {isWork ? 'FOCADO' : 'RELAX'}
-            </Text>
-        </View>
+        {/* CORREÇÃO: Usando a tag Image com as configurações do dashboard */}
+        <Image 
+          source={require('../../assets/images/mascote.png')} 
+          style={styles.mascotImage} // Usa o estilo copiado do dashboard
+          resizeMode="contain"
+        />
       </View>
 
       <View style={[styles.speechBubble, { backgroundColor: theme.card, shadowColor: theme.primary }]}>
@@ -342,20 +342,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-    marginTop: 10, // Margem superior adicionada para compensar a remoção do topo
+    marginTop: 10, 
   },
   mascotContainer: {
     marginRight: 16,
   },
-  mascotPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  mascotImage: { // <--- CORREÇÃO: Estilo idêntico ao dashboard
+    width: 115, 
+    height: 115,
+    borderRadius: 50,
     borderWidth: 2,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: 'transparent', 
+    resizeMode: 'contain',
   },
+  // O estilo mascotPlaceholder é removido implicitamente por não ser mais usado no componente.
+  
   speechBubble: {
     flex: 1,
     padding: 16,
