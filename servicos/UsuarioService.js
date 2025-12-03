@@ -1,17 +1,12 @@
 import api from './api';
 
 const UsuarioService = {
-    // POST /api/usuarios/login
-    // login: async (email, password) => {
-    //     // Envia o DTO LoginUserDto
-    //     const response = await api.post('/usuarios/login', { email, password });
-    //     return response.data; // Retorna RecoveryJwtTokenDto (que tem o token)
-    // },
+    
     async login(email, password) {
         try{
             const request = { email, password };
-            const response =  await api.post('/api/usuarios/login', request);
-            return response.data; // Retorna RecoveryJwtTokenDto (que tem o token)
+            const response =  await api.post('usuarios/login', request);
+            return response.data; 
         }catch(error){
             console.error("Erro no login do usuário:", error);
             throw error;
@@ -25,15 +20,14 @@ const UsuarioService = {
             nome, 
             email, 
             password,
-            role: 'ROLE_USUARIO' // Conforme definido na integração anterior
+            role: 'ROLE_USUARIO' 
         };
-        const response = await api.post('/api/usuarios/criar', payload);
-        return response.data; // Retorna status 201 CREATED (corpo vazio ou dados do novo usuário se o backend retornar)
+        const response = await api.post('usuarios/criar', payload);
+        return response.data; 
     },
 
-    // DELETE /api/usuarios/apagar/{id} (Geralmente não usado no AuthContext, mas útil no Service)
     apagar: async (id) => {
-        await api.delete(`/api/usuarios/apagar/${id}`);
+        await api.delete(`usuarios/apagar/${id}`);
     }
     
     // Outras funções de CRUD (listar, atualizar) podem ser adicionadas aqui se necessário.
