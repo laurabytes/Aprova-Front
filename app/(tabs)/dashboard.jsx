@@ -8,17 +8,13 @@ import {
   Target,
   Timer,
   TrendingUp,
-  UserCircle // Importado de volta
+  UserCircle 
 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  Image // Importante para colocar o mascote depois
-  ,
-
-
-
+  Image,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -42,7 +38,6 @@ function MascotHeader({ user, theme }) {
     <View style={styles.mascotSection}>
       {/* Lado do Mascote */}
       <View style={styles.mascotContainer}>
-        {/* SUBSTITUÍDO: PLACEHOLDER PELA IMAGEM REAL DO MASCOTE */}
         <Image 
           source={require('../../assets/images/mascote.png')} 
           style={styles.mascotImage} 
@@ -128,6 +123,10 @@ export default function TelaDashboard() {
       );
   }
 
+  // CORREÇÃO DO ERRO "L-Infinity":
+  // Verifica se existe algum dado maior que zero. Se todos forem 0, hasData é false.
+  const hasData = stats.studyData.some(d => d.valor > 0);
+
   const chartConfig = {
     backgroundColor: theme.background,
     backgroundGradientFrom: theme.background,
@@ -150,7 +149,7 @@ export default function TelaDashboard() {
       <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* 0. BARRA SUPERIOR (NOVO: Perfil e Data) */}
+        {/* 0. BARRA SUPERIOR */}
         <View style={styles.topBar}>
             <View>
                 <Text style={[styles.dateText, { color: theme.mutedForeground }]}>
@@ -184,7 +183,7 @@ export default function TelaDashboard() {
             </View>
         </View>
 
-        {/* 3. ESTATÍSTICAS (O OCEANO DE DADOS) */}
+        {/* 3. ESTATÍSTICAS */}
         <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Meu Progresso</Text>
         <View style={styles.statsGrid}>
             <OceanStatCard 
@@ -213,7 +212,7 @@ export default function TelaDashboard() {
             />
         </View>
 
-        {/* 4. BOTÃO DE AÇÃO (MERGULHAR) */}
+        {/* 4. BOTÃO DE AÇÃO */}
         <TouchableOpacity 
             style={[styles.diveButton, { backgroundColor: theme.primary }]}
             onPress={() => router.push('/(tabs)/pomodoro')}
@@ -234,21 +233,34 @@ export default function TelaDashboard() {
                 </Text>
             </View>
             
-            <LineChart
-                data={chartData}
-                width={screenWidth - 40} 
-                height={180}
-                chartConfig={chartConfig}
-                bezier
-                style={{
-                    marginVertical: 8,
-                    borderRadius: 16,
-                }}
-                fromZero
-                withInnerLines={false}
-                withOuterLines={false}
-                yAxisInterval={1}
-            />
+            {/* CORREÇÃO AQUI: 
+               Renderização Condicional. Se hasData for false, mostra "Sem atividade" 
+               em vez de tentar renderizar um gráfico flat que causa erro.
+            */}
+            {hasData ? (
+                <LineChart
+                    data={chartData}
+                    width={screenWidth - 40} 
+                    height={180}
+                    chartConfig={chartConfig}
+                    bezier
+                    style={{
+                        marginVertical: 8,
+                        borderRadius: 16,
+                    }}
+                    fromZero
+                    withInnerLines={false}
+                    withOuterLines={false}
+                    yAxisInterval={1}
+                />
+            ) : (
+                <View style={[styles.emptyChartContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                    <Text style={{ color: theme.mutedForeground, textAlign: 'center' }}>
+                        Nenhuma atividade registrada essa semana. {'\n'}
+                        Complete uma sessão de estudo para ver o gráfico! 
+                    </Text>
+                </View>
+            )}
         </View>
 
       </ScrollView>
@@ -263,7 +275,7 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
 
-  // TOP BAR (NOVO)
+  // TOP BAR
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -291,12 +303,10 @@ const styles = StyleSheet.create({
   mascotContainer: {
     marginRight: 16,
   },
-  // Use esse estilo quando colocar a <Image>
   mascotImage: {
-    // ALTERADO: Aumentando o tamanho para 100x100
     width: 115, 
     height: 115, 
-    borderRadius: 50, // Metade do tamanho para ser um círculo perfeito
+    borderRadius: 50, 
     borderWidth: 2,
     borderColor: 'transparent', 
     resizeMode: 'contain',
@@ -307,7 +317,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     borderRadius: 16,
-    borderBottomLeftRadius: 4, // "Bico" do balão
+    borderBottomLeftRadius: 4, 
     elevation: 3,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -341,7 +351,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12, // Um pouco mais alto
+    paddingVertical: 12, 
     gap: 12,
   },
   focusInput: {
@@ -363,7 +373,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   oceanCard: {
-    width: '48%', // Divide em 2 colunas
+    width: '48%', 
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
@@ -388,7 +398,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 99, // Botão Pílula
+    borderRadius: 99, 
     shadowColor: '#2693BE',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -404,5 +414,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     padding: 8,
     borderRadius: 20,
+  },
+
+  // ESTILO DO GRÁFICO VAZIO (NOVO)
+  emptyChartContainer: {
+      height: 180,
+      width: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      marginTop: 8,
   },
 });

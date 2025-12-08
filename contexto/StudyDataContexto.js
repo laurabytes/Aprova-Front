@@ -7,7 +7,8 @@ import SessaoEstudoService from '../servicos/SessaoEstudoService';
 
 const StudyDataContext = createContext(undefined);
 
-const FOCUS_KEY = 'app:studyFocus';
+// A chave fixa foi removida para evitar o compartilhamento de dados entre usuários
+// const FOCUS_KEY = 'app:studyFocus'; 
 
 export function useStudyData() {
   const context = useContext(StudyDataContext);
@@ -37,6 +38,7 @@ export function StudyDataProvider({ children }) {
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 1. Efeito para CARREGAR os dados quando o usuário muda
   useEffect(() => {
     if (!user || isAuthLoading) { 
         setFoco('');
@@ -50,19 +52,27 @@ export function StudyDataProvider({ children }) {
         try {
             setIsLoading(true);
             
-            const storedFocus = await AsyncStorage.getItem(FOCUS_KEY);
-            if (storedFocus) setFoco(storedFocus);
-
-            // CORREÇÃO CRÍTICA: Passando user.id
-            const metas = await MetasService.listar(user.id);
+            // --- CORREÇÃO AQUI ---
+            // Usa o ID do usuário para criar uma chave única no AsyncStorage
+            const userFocusKey = `app:studyFocus:${user.id}`;
+            const storedFocus = await AsyncStorage.getItem(userFocusKey);
             
+            if (storedFocus) {
+                setFoco(storedFocus);
+            } else {
+                setFoco(''); // Limpa o foco se não houver nada salvo para este usuário específico
+            }
+            // ---------------------
+
+            // Carrega metas do usuário
+            const metas = await MetasService.listar(user.id);
             const metasFormatadas = metas.map(m => ({
                 ...m,
                 id: m.id || m.metasId 
             }));
             setGoals(metasFormatadas);
 
-            // CORREÇÃO CRÍTICA: Passando user.id
+            // Carrega sessões de estudo do usuário
             const sessoes = await SessaoEstudoService.listar(user.id);
             setSessions(sessoes || []);
 
@@ -75,8 +85,13 @@ export function StudyDataProvider({ children }) {
     loadData();
   }, [user, isAuthLoading]);
 
+  // 2. Efeito para SALVAR o foco sempre que ele mudar
   useEffect(() => {
-    if (user && !isLoading) AsyncStorage.setItem(FOCUS_KEY, foco).catch(console.error);
+    // Só salva se tiver um usuário válido e não estiver carregando
+    if (user && user.id && !isLoading) {
+        const userFocusKey = `app:studyFocus:${user.id}`;
+        AsyncStorage.setItem(userFocusKey, foco).catch(console.error);
+    }
   }, [foco, isLoading, user]);
 
   const updateFoco = (newFoco) => setFoco(newFoco);
@@ -86,7 +101,7 @@ export function StudyDataProvider({ children }) {
         const payload = {
             nome: newGoal.nome || newGoal.titulo, 
             data: newGoal.data, 
-            usuarioId: user.id, // Garante envio do ID
+            usuarioId: user.id, 
             status: 0, 
         };
         
@@ -156,7 +171,7 @@ export function StudyDataProvider({ children }) {
             dataInicio: newSession.dataInicio, 
             duracao: newSession.duracao,
             tipo: newSession.tipo, 
-            usuarioId: user.id // Adicionar se o backend precisar no futuro
+            usuarioId: user.id 
         };
         
         const saved = await SessaoEstudoService.criar(payload);
