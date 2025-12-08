@@ -4,24 +4,27 @@
     "slug": "aprova-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/mascote.png", // ALTERADO: Usa o Mascote como ícone principal (se você renomeá-lo para icon.png, não precisa mudar o caminho)
+    "icon": "./assets/images/mascote.png",
     "scheme": "aprovaapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lauraf4gundes.aprovaapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        // MANTIDO: Estas referências são para ícones adaptativos do Android e não são logos do Expo. 
-        // Se desejar usá-las, você precisará gerar versões com o mascote. Por enquanto, mantemos as originais.
-        "foregroundImage": "./assets/images/android-icon-foreground.png", 
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.lauraf4gundes.aprovaapp"
     },
     "web": {
       "output": "static",
@@ -32,8 +35,7 @@
       [
         "expo-splash-screen",
         {
-          // ALTERADO: Substitui a imagem splash do Expo pela imagem mascote
-          "image": "./assets/images/mascote.png", 
+          "image": "./assets/images/mascote.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -47,6 +49,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2b1443b5-db0f-4a17-849d-6cf3fb7187ce"
+      }
+    },
+    "owner": "lauraf4gundes",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2b1443b5-db0f-4a17-849d-6cf3fb7187ce"
     }
   }
 }

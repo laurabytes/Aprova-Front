@@ -1,0 +1,202 @@
+/* Reset Básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f4f7f6;
+}
+.qr-code-area {
+    margin-bottom: 20px;
+    /* Remover o padding do passo anterior se ele existir */
+}
+
+.qr-code-area img {
+    /* NOVO TAMANHO: De 200px para 120px, garantindo que o código não seja enorme */
+    max-width: 120px; 
+    height: auto;
+    border: 1px solid #ccc;
+    padding: 5px; /* Reduzindo o padding */
+    border-radius: 5px;
+}
+/* Layout e Containers */
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+.section-padding {
+    padding: 60px 0;
+}
+
+.background-secondary {
+    background-color: #e9ecef;
+}
+
+/* Tipografia */
+h1 {
+    font-size: 3em;
+    color: #007bff; /* Azul primário */
+    margin-bottom: 0.2em;
+}
+
+h2 {
+    font-size: 2.2em;
+    color: #007bff;
+    margin-bottom: 20px;
+    border-bottom: 3px solid #007bff;
+    display: inline-block;
+    padding-bottom: 5px;
+}
+
+h3 {
+    color: #495057;
+    margin-bottom: 15px;
+}
+
+p {
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.small-text {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.placeholder-text {
+    font-style: italic;
+    color: #dc3545; /* Vermelho para destaque de aviso */
+    text-align: center;
+    margin-top: 30px;
+}
+
+/* Header */
+header {
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    padding: 80px 0;
+}
+
+header h1 {
+    color: white;
+    font-size: 4em;
+}
+
+header p {
+    font-size: 1.5em;
+    font-weight: 300;
+}
+
+/* Screenshots */
+#prints .screenshots-grid {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+
+.screenshot-img {
+    width: 100%;
+    max-width: 250px; /* Tamanho de tela de celular */
+    height: auto;
+    border: 5px solid #fff;
+    border-radius: 15px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.screenshot-img:hover {
+    transform: translateY(-5px);
+}
+
+/* Download Section */
+#download .download-options {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+
+.platform-box {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    flex: 1;
+    min-width: 280px;
+    max-width: 400px;
+}
+
+.qr-code-area {
+    margin-bottom: 20px;
+}
+
+.qr-code-area img {
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.download-button {
+    display: inline-block;
+    padding: 12px 25px;
+    margin-top: 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    color: white;
+}
+
+.android-button {
+    background-color: #3DDC84; /* Verde Android */
+}
+
+.android-button:hover {
+    background-color: #35c477;
+}
+
+.ios-button {
+    background-color: #555555; /* Cinza/Preto iOS */
+}
+
+.ios-button:hover {
+    background-color: #444444;
+}
+
+/* Footer */
+footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 20px 0;
+    font-size: 0.9em;
+}
+
+/* Media Queries para Responsividade */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 3em;
+    }
+    header p {
+        font-size: 1.2em;
+    }
+    h2 {
+        font-size: 1.8em;
+    }
+    .platform-box {
+        min-width: 100%;
+    }
+}
